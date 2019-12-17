@@ -8,12 +8,15 @@
 #include <SDL2/SDL.h>
 #include <string>
 
-class Chip8_display {
+class Display {
 public:
-    Chip8_display(std::string title, int x, int y, int w, int h, uint flags);
-    Chip8_display();
-    Chip8_display(Chip8_display *pDisplay);
-    ~Chip8_display();
+    Display(std::string title, int x, int y, int w, int h, uint flags);
+    Display();
+    Display(Display *pDisplay);
+    ~Display();
+
+    // Graphics
+    unsigned char gfc[64 * 32]; // Display resolution of 64 x 32 pixels;
 
 private:
     SDL_Window *window;

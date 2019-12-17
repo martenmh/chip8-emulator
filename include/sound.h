@@ -6,11 +6,9 @@
 #define CHIP_8_EMULATOR_SOUND_H
 
 
-
-class sound {
+class Sound {
 
 };
-
 
 
 #endif //CHIP_8_EMULATOR_SOUND_H

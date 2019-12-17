@@ -5,6 +5,8 @@
 #ifndef CHIP_8_EMULATOR_CHIP8_H
 #define CHIP_8_EMULATOR_CHIP8_H
 
+class Chip8;
+
 /**
    Data registers:
  */
@@ -32,7 +34,7 @@
  */
 #define VF V[15]    // flag, carry flag, "no borrow" flag, carry flag
 
-class cpu {
+class CPU {
 public:
     void initialize();
     void emulateCycle();
@@ -40,28 +42,23 @@ public:
     // Opcode variable used for storing current opcode
     unsigned short opcode;
 
-    // 4kb of bytes (= unsigned char) 0x000-0xfff
-    unsigned char memory[4096];
-
     // Registers (8 bit)
     unsigned char V[16];    // Data registers [V0...VF]
     // Registers (16 bit)
     unsigned short I;       // Address register
     unsigned short pc;      // Program counter
 
-    // Graphics
-    unsigned char gfc[64 * 32]; // display resolution of 64 x 32 pixels;
-
     // Timers (count down at 60 hertz)
     unsigned char delay_timer;  // timing events of games
     unsigned char sound_timer;  // when value != 0, make a beeping sound
 
-    // Stack to store return addresses when subroutines are called (call stack)
-    unsigned short stack[16];   // Call stack
     unsigned short sp;          // Stack pointer
 
     // Keypad 0-F
     unsigned char key[16];
+    // Parent
+    Chip8 *chip8_;
+
 };
 
 

@@ -6,11 +6,9 @@
 #define CHIP_8_EMULATOR_INPUT_H
 
 
-
-class input {
+class Input {
 
 };
-
 
 
 #endif //CHIP_8_EMULATOR_INPUT_H

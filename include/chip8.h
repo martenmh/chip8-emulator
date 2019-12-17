@@ -5,10 +5,33 @@
 #ifndef CHIP_8_EMULATOR_CHIP8_EMULATOR_H
 #define CHIP_8_EMULATOR_CHIP8_EMULATOR_H
 
-#include "chip8_display.h"
+#include <memory>
+#include <SDL2/SDL.h>
 
-class Chip8_emulator {
+#include "cpu.h"
+#include "memory.h"
+#include "input.h"
+#include "display.h"
 
+class Chip8 {
+public:
+    Chip8();
+    ~Chip8();
+
+    /**
+       Initialize all parts
+     */
+    void initialize();
+
+    /**
+       Load a game file into memory
+       @param name The path name of the game
+     */
+    void loadGame(std::string pathName);
+
+    std::unique_ptr<Display> display;
+    Memory memory;
+    CPU cpu;
 };
 
 
