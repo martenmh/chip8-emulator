@@ -4,6 +4,7 @@ xxx = memory address
 xx = value
 x & y = registers
 n = single value
+
 |  Opcode 	|  Assembly 	| Explanation  	|  Note* 	|
 |---	|---	|---	|---	|
 |00E0   	|CLS   	|Clear screen   	|   	|
