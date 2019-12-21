@@ -1,9 +1,9 @@
 # Opcode table
 
-xxx = memory address
-xx = value
-x & y = registers
-n = single value
+xxx = memory address<br>
+xx = value<br>
+x & y = registers<br>
+n = single value<br>
 
 |  Opcode 	|  Assembly 	| Explanation  	|  Note* 	|
 |---	|---	|---	|---	|
@@ -16,7 +16,6 @@ n = single value
 |4yxx	|SKIP.NE   	|`Skip` next instruction if the value of `Vy != xx`  	|   	|
 |5yx0	|SKIP.EQ   	|`Skip` next instruction if the value of `Vy == Vx`	|   	|
 |9yx0	|SKIP.NE   	|`Skip` next instruction if the value of `Vy != Vx`	|   	|
-
 |8xy0	|MOV Vx, Vy   	|Move Vy into Vx   	|   	|
 |8xy1	|OR Vx, Vy   	|OR Vy into Vx   	|   	|
 |8xy2	|AND Vx, Vy   	|AND Vy into Vx    	|   	|
@@ -26,11 +25,9 @@ n = single value
 |8xy6	|SHR Vx "or" SHR Vx, Vy 	|Shift the value of Vy 1 bit to the right and store in Vx   	|Stores the "removed" bit into VF (Flags register)	|
 |8xy7 	|SUBB Vx, Vy   	|Subtract backwards `Vx=Vy-Vx`   	|Alters VF (Flags register)	|
 |8xyE	|SHL Vx "or" SHL Vx, Vy   	|Shift the value of Vy 1 bit to the left and store in Vx    	|Stores the "removed" bit into VF (Flags register)	|
-
 |Dxyn   	|DISP x, y, n   	|Draw sprite at coordinate (Vx, Vy) with height of N pixels   	|VF (Flags register) is set to 1 if any screen pixels are flipped from set to unset when the sprite is drawn, and to 0 if that doesn't happen   	|
 |Ex9E   	|   	| Skip the next instruction if the key stored in VX is pressed  	|   	|
 | ExA1  	|   	| Skip the next instruction if the key stored in VX isn't pressed  	|   	|
-
 | Fx07  	|   	|Set Vx to the value of the delay timer   	|   	|
 | Fx0A  	|   	|  Wait for key press and store in Vx (All instructions halted until key press) 	|   	|
 |Fx15   	|   	|Set the delay timer to Vx   	|   	|
