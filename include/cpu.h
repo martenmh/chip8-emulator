@@ -36,7 +36,7 @@ class Chip8;
 
 class CPU {
 public:
-    void initialize();
+    void initialize(Chip8 *chip8);
     void emulateCycle();
 
     // Opcode variable used for storing current opcode

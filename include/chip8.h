@@ -29,7 +29,7 @@ public:
      */
     void loadGame(std::string pathName);
 
-    std::unique_ptr<Display> display;
+    //std::unique_ptr<Display> display;
     Memory memory;
     CPU cpu;
 };

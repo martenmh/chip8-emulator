@@ -21,11 +21,11 @@ Chip8::Chip8(){
 }
 
 Chip8::~Chip8(){
-    SDL_Quit();
+    //SDL_Quit();
 }
 
 void Chip8::initialize() {
-    cpu.initialize();
+    cpu.initialize(this);
 }
 
 void Chip8::loadGame(std::string pathName) {
@@ -34,7 +34,10 @@ void Chip8::loadGame(std::string pathName) {
         std::cerr << "Failed loading game into memory" << std::endl;
 
     // Load game to 0xEFF (max)
-    for(int i = 0; i < 0xEFF; i++)
-        memory[i + 0x200] = file.get(); // Start at 0x200
-
+    int i = 0;
+    while(!file.eof() && i < 0xEFF ) {
+        memory[i++ + 0x200] = file.get(); // Start at 0x200
+        std::cout << memory[i - 1 + 0x200] << std::endl;
+        // Increment after usage
+    }
 }   // file.close();
