@@ -8,16 +8,16 @@
 #include <fstream>
 
 Chip8::Chip8(){
-    SDL_Init(SDL_INIT_VIDEO);
-
-    display = std::make_unique<Display>(new Display(
-            "An SDL2 Window",
-            SDL_WINDOWPOS_UNDEFINED,
-            SDL_WINDOWPOS_UNDEFINED,
-            640,
-            480,
-            SDL_WINDOW_OPENGL));
-    SDL_Delay(3000);
+//    SDL_Init(SDL_INIT_VIDEO);
+//
+//    display = std::make_unique<Display>(new Display(
+//            "An SDL2 Window",
+//            SDL_WINDOWPOS_UNDEFINED,
+//            SDL_WINDOWPOS_UNDEFINED,
+//            640,
+//            480,
+//            SDL_WINDOW_OPENGL));
+//    SDL_Delay(3000);
 }
 
 Chip8::~Chip8(){

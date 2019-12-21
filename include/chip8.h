@@ -6,7 +6,7 @@
 #define CHIP_8_EMULATOR_CHIP8_EMULATOR_H
 
 #include <memory>
-#include <SDL2/SDL.h>
+//#include <SDL2/SDL.h>
 
 #include "cpu.h"
 #include "memory.h"

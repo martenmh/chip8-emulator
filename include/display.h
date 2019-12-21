@@ -5,7 +5,7 @@
 #ifndef CHIP_8_EMULATOR_DISPLAY_H
 #define CHIP_8_EMULATOR_DISPLAY_H
 
-#include <SDL2/SDL.h>
+//#include <SDL2/SDL.h>
 #include <string>
 
 class Display {
@@ -19,7 +19,7 @@ public:
     unsigned char gfc[64 * 32]; // Display resolution of 64 x 32 pixels;
 
 private:
-    SDL_Window *window;
+    //SDL_Window *window;
 };
 
 
