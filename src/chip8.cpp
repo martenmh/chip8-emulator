@@ -33,11 +33,16 @@ void Chip8::loadGame(std::string pathName) {
     if(file.bad())
         std::cerr << "Failed loading game into memory" << std::endl;
 
-    // Load game to 0xEFF (max)
     int i = 0;
+    // Load game up to 0xEFF or EOF
     while(!file.eof() && i < 0xEFF ) {
-        memory[i++ + 0x200] = file.get(); // Start at 0x200
-        std::cout << memory[i - 1 + 0x200] << std::endl;
+        // Skip spaces & enters
+        char c = file.get();
+        if(c == ' ' || c == '\n')
+            continue;
+
+        // Write to memory address
+        memory[i++ + 0x200] = c; // Start at 0x200
         // Increment after usage
     }
-}   // file.close();
+}   // file.close()

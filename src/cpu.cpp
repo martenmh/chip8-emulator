@@ -27,136 +27,140 @@ void CPU::emulateCycle() {
     /* Store a byte from memory into the 2 byte opcode variable.
        Shift it so it is stored in the high byte.
        Store another byte from memory in to the lower byte */
-
     opcode =  chip8_->memory[pc] << 8 |  chip8_->memory[pc + 1];
-
     pc += 2;
-    std::cout << (opcode & 0xF000) << (opcode & 0x0F00) << (opcode & 0x00F0) << (opcode & 0x000F) << std::endl;
+
     // $ = Value of register
     // # = Immediate value
     // Compare the first character
     switch(opcode & 0xF000){
-        case 0xA000:
-            std::cout << "SETI " << (opcode & 0x0FFF) << std::endl;
+        case 0xA000:    //
+            printf("SETI %d",(opcode & 0x0FFF));
         break;
-        case 0xC000:
-            std::cout << "RAND $" << (opcode & 0x0F00) << ", #" << (opcode & 0x00FF) << std::endl;
+        case 0xC000:    //
+            printf("RAND $%d",(opcode & 0x0F00),", #",(opcode & 0x00FF));
         break;
         case 0x0000:
             // Compare the last 2 characters
             switch(opcode & 0x00FF){
                 case 0x00E0:   // 00E0 Clear screen
-                    std::cout << "CLS" << std::endl;
+                    printf("CLS");
                 break;
                 case 0x00EE:   // 00EE Return from subroutine
-                    std::cout << "RET" << std::endl;
+                    printf("RET");
                 break;
                 default:        // 0xxx
-                    std::cout << "CALL.RCA_1802 " << (opcode & 0x0FFF) << std::endl;
+                    printf("CALL.RCA_1802 ",(opcode & 0x0FFF));
                 break;
             }
         break;
-        case 0x1000:   // Jump to address
-            std::cout << "JMP $" << (opcode & 0x0FFF) << std::endl;
+        case 0x1000:   // 1xxx Jump to address $xxx
+            printf("JMP $0x%X\n",(opcode & 0x0FFF));
         break;
-        case 0x2000:   // Call subroutine
-            std::cout << "CALL $" << (opcode & 0x0FFF) << std::endl;
+        case 0x2000:   // 2xxx Call subroutine $xxx
+            printf("CALL $0x%X\n",(opcode & 0x0FFF));
         break;
-        case 0xB000:   // Jump to address + V0
-            std::cout << "JMP $" << (opcode & 0x0FFF) << "(V0)" << std::endl;
+        case 0xB000:   // Bxxx Jump to address $(xxx + V0)
+            printf("JMP $0x%X(V0)\n",(opcode & 0x0FFF));
         break;
-        case 0x3000:   // Skip if Equal (Comparing immediate value to a register)
-            std::cout << "SKIP.EQ $" << (opcode & 0x0F00) << ", #" << (opcode & 0x00FF) << std::endl;
+        case 0x3000:   // 3xnn Skip if Equal (Comparing immediate value to a register, if(Vx == nn))
+            printf("SKIP.EQ $0x%X, #0x%X\n",(opcode & 0x0F00),(opcode & 0x00FF));
         break;
-        case 0x4000:   // Skip if Not Equal (Comparing immediate value to a register)
-            std::cout << "SKIP.NE $" << (opcode & 0x0F00) << ", #" << (opcode & 0x00FF) << std::endl;
+        case 0x4000:   // Skip if Not Equal (Comparing immediate value to a register, if(Vx == nn))
+            printf("SKIP.NE $0x%X, #0x%X\n",(opcode & 0x0F00), (opcode & 0x00FF));
         break;
-        case 0x5000:   // Skip if Equal (Comparing registers)
-            std::cout << "SKIP.EQ $" << (opcode & 0x0F00) << ", $" << (opcode & 0x00F0) << std::endl;
+        case 0x5000:   // Skip if Equal (Comparing registers, if(Vx == Vy))
+            printf("SKIP.EQ $0x%X, $0x%X\n",(opcode & 0x0F00),(opcode & 0x00F0));
         break;
-        case 0x9000:   // Skip if Not Equal (Comparing registers)
-            std::cout << "SKIP.NE $" << (opcode & 0x0F00) << ", $" << (opcode & 0x00F0) << std::endl;
+        case 0x6000:    // 6xnn Assign immediate value Vx = nn
+            printf("MOV $0x%X, #0x%X\n", (opcode & 0x0F00), (opcode & 0x0F00));
+        break;
+        case 0x7000:    // 7xnn Add immediate value Vx += nn
+            printf("ADD $0x%X, #0x%X\n", (opcode & 0x0F00), (opcode & 0x0F00));
         break;
         case 0x8000:
             switch(opcode & 0x000F){
-                case 0x0000:   // 8xx0 Move register to register
-                    std::cout << "MOV $" << (opcode & 0x0F00) << ", $" << (opcode & 0x00FF) << std::endl;
+                case 0x0000:   // 8xx0 Move register to register (Vx = Vy)
+                    printf("MOV $0x%X, $0x%X\n",(opcode & 0x0F00),(opcode & 0x00FF));
                     break;
-                case 0x0001:   // 8xy1 OR
-                    std::cout << "OR $" << (opcode & 0x0F00) << ", $" << (opcode & 0x00FF) << std::endl;
+                case 0x0001:   // 8xy1 OR   x |= y
+                    printf("OR $0x%X, $0x%X\n",(opcode & 0x0F00),(opcode & 0x00FF));
                     break;
-                case 0x0002:   // 8xy2 AND
-                    std::cout << "AND $" << (opcode & 0x0F00) << ", $" << (opcode & 0x00FF) << std::endl;
+                case 0x0002:   // 8xy2 AND  x &= y
+                    printf("AND $0x%X, $0x%X\n",(opcode & 0x0F00),(opcode & 0x00FF));
                     break;
-                case 0x0003:   // 8xy3 XOR
-                    std::cout << "XOR $" << (opcode & 0x0F00) << ", $" << (opcode & 0x00FF) << std::endl;
+                case 0x0003:   // 8xy3 XOR x ^= y
+                    printf("XOR $0x%X, $0x%X\n",(opcode & 0x0F00),(opcode & 0x00FF));
                     break;
-                case 0x0004:   // 8xy4 Add
-                    std::cout << "ADD $" << (opcode & 0x0F00) << ", $" << (opcode & 0x00FF) << std::endl;
+                case 0x0004:   // 8xy4 Add x += y
+                    printf("ADD $0x%X, $0x%X\n",(opcode & 0x0F00),(opcode & 0x00FF));
                     break;
-                case 0x0005:   // 8xy5 Subtract
-                    std::cout << "SUB $" << (opcode & 0x0F00) << ", $" << (opcode & 0x00FF) << std::endl;
+                case 0x0005:   // 8xy5 Subtract x -= y
+                    printf("SUB $0x%X, $0x%X\n",(opcode & 0x0F00),(opcode & 0x00FF));
                     break;
-                case 0x0006:   // 8xy6 Shift right
-                    std::cout << "SHR $" << (opcode & 0x0F00) << ", $" << (opcode & 0x00FF) << std::endl;
-                    //std::cout << "SHL $" << (opcode & 0x0F00) << std::endl;
+                case 0x0006:   // 8xy6 Shift right x >>= 1
+                    printf("SHR $0x%X, $0x%X\n",(opcode & 0x0F00),(opcode & 0x00FF));
+                    //printf("SHL $",(opcode & 0x0F00));
                     break;
-                case 0x0007:   // 8xy7 Subtract backwards
-                    std::cout << "SUBB $" << (opcode & 0x0F00) << std::endl;
+                case 0x0007:   // 8xy7 Subtract backwards x = y - x
+                    printf("SUBB $0x%X\n",(opcode & 0x0F00));
                     break;
-                case 0x000E:   // 8xyE Shift left
-                    std::cout << "SHL $" << (opcode & 0x0F00) << ", $" << (opcode & 0x00FF) << std::endl;
-                    //std::cout << "SHL $" << (opcode & 0x0F00) << std::endl;
+                case 0x000E:   // 8xyE Shift left x <<= y
+                    printf("SHL $0x%X, $0x%X\n",(opcode & 0x0F00), (opcode & 0x00FF));
+                    //printf("SHL $",(opcode & 0x0F00));
                     break;
             }
         break;
+        case 0x9000:   // Skip if Not Equal (Comparing registers, if(Vx == Vy))
+            printf("SKIP.NE $0x%X, $0x%X\n",(opcode & 0x0F00),(opcode & 0x00F0));
+        break;
         case 0xD000:   // Dxyn Display value n in (x,y)
-            std::cout << "DISP $" << (opcode & 0x0F00) << ", $" << (opcode & 0x00F0) << ", #" << (opcode & 0x000F) << std::endl;
+            printf("DISP $0x%X, $0x%X, #0x%X\n",(opcode & 0x0F00),(opcode & 0x00F0),(opcode & 0x000F));
         break;
         case 0xE000:
             switch(opcode & 0x000F){
                 case 0x000E:   // Skip next instruction if a key is pressed
-                    std::cout << "SKIP.IF.KEY.PRESSED $" << (opcode & 0x0F00) << std::endl;
+                    printf("SKIP.IF.KEY.PRESSED $0x%X\n",(opcode & 0x0F00));
                     break;
                 case 0x0001:   // Skip next instruction if a key is not pressed
-                    std::cout << "SKIP.IF.KEY.NOTPRESSED $" << (opcode & 0x0F00) << std::endl;
+                    printf("SKIP.IF.KEY.NOTPRESSED $0x%X\n",(opcode & 0x0F00));
                     break;
             }
         break;
         case 0xF000:
             switch(opcode & 0x00FF){
                 case 0x0007:   // Move the value of the delay timer into a register
-                    std::cout << "GET.DELAY_TIMER $" << (opcode & 0x0F00) << std::endl;
+                    printf("GET.DELAY_TIMER $0x%X\n",(opcode & 0x0F00));
                 break;
                 case 0x000A:   // Wait for a key press and store it in register
-                    std::cout << "WAIT.KEY.AND.STORE.IN $" << (opcode & 0x0F00) << std::endl;
+                    printf("WAIT.KEY.AND.STORE.IN $0x%X\n",(opcode & 0x0F00));
                 break;
                 case 0x0015:   // Set delay timer to the value in the register
-                    std::cout << "SET.DELAY_TIMER $" << (opcode & 0x0F00) << std::endl;
+                    printf("SET.DELAY_TIMER $0x%X\n",(opcode & 0x0F00));
                 break;
                 case 0x0018:   // Set sound timer to the value in the register
-                    std::cout << "SET.SOUND_TIMER $" << (opcode & 0x0F00) << std::endl;
+                    printf("SET.SOUND_TIMER $0x%X\n",(opcode & 0x0F00));
                 break;
                 case 0x001e:   // Add register value to I (Address register)
-                    std::cout << "ADD.TO.I $" << (opcode & 0x0F00) << std::endl;
+                    printf("ADD.TO.I $0x%X\n",(opcode & 0x0F00));
                 break;
                 case 0x0029:   // Set I to the value in the register
-                    std::cout << "SET_I.TO $" << (opcode & 0x0F00) << std::endl;
+                    printf("SET_I.TO $0x%X\n",(opcode & 0x0F00));
                 break;
                 case 0x0033:   // Store the Binary-Coded decimal representation of the register in I, I+1 and I+2
-                    std::cout << "BIN-COD-DEC $" << (opcode & 0x0F00) << std::endl;
+                    printf("BIN-COD-DEC $0x%X\n",(opcode & 0x0F00));
                 break;
                 case 0x0055:   // Store V0-Vx in memory starting at I
-                    std::cout << "STORE $" << (opcode & 0x0F00) << std::endl;
+                    printf("STORE $0x%X\n",(opcode & 0x0F00));
                 break;
                 case 0x0065:   // Fill V0-Vx in memory starting at I
-                    std::cout << "FILL $" << (opcode & 0x0F00) << std::endl;
+                    printf("FILL $0x%X\n", (opcode & 0x0F00));
                 break;
             }
         break;
         default:
-            std::cerr << "Unknown opcode: " << opcode << std::endl;
-        break;
+            printf ("Unknown opcode [0x0000]: 0x%X\n", opcode);
+            break;
     }
 
 
@@ -164,7 +168,7 @@ void CPU::emulateCycle() {
         --delay_timer;
     if(sound_timer > 0) {
         if (sound_timer == 1)
-            std::cout << "BEEP" << std::endl;
+            printf("BEEP");
         --sound_timer;
     }
 }
