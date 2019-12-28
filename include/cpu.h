@@ -37,11 +37,13 @@ class Chip8;
 class CPU {
 public:
     void initialize(Chip8 *chip8);
+
+    /* All instructions are performed here */
     void emulateCycle();
 
     // Opcode variable used for storing current opcode
     unsigned short opcode;
-
+;
     // Registers (8 bit)
     unsigned char V[16];    // Data registers [V0...VF]
     // Registers (16 bit)

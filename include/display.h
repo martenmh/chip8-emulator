@@ -14,7 +14,7 @@ public:
     Display();
     Display(Display *pDisplay);
     ~Display();
-
+    void clearScreen();
     // Graphics
     unsigned char gfc[64 * 32]; // Display resolution of 64 x 32 pixels;
 
