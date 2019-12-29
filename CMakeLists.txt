@@ -18,8 +18,8 @@ add_executable(chip-8-emulator
         include/sound.h src/sound.cpp       # sound
         src/main.cpp)                       # main
 
-#target_link_libraries(chip-8-emulator SDL2)
-target_link_libraries(chip-8-emulator )
+target_link_libraries(chip-8-emulator SDL2)
+#target_link_libraries(chip-8-emulator )
 
 include_directories(${GTEST_INCLUDE_DIRS})
 # Link runTests with what we want to test and the GTest and pthread library

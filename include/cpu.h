@@ -5,6 +5,8 @@
 #ifndef CHIP_8_EMULATOR_CHIP8_H
 #define CHIP_8_EMULATOR_CHIP8_H
 
+#include <ostream>
+
 class Chip8;
 
 /**
@@ -34,12 +36,26 @@ class Chip8;
  */
 #define VF V[15]    // flag, carry flag, "no borrow" flag, carry flag
 
+
 class CPU {
 public:
     void initialize(Chip8 *chip8);
 
     /* All instructions are performed here */
     void emulateCycle();
+
+    /**
+       Get complete disassembly of loaded program
+       @param os stream to give output to
+       TODO: Create GUI for disassembly
+     */
+    void getDisassembly(std::ostream &os);
+    /**
+       Get all info from the CPU, including registers and timers
+       @param os stream to give output to
+       TODO: Create GUI for CPU info
+     */
+    void getCPUInfo(std::ostream &os);
 
     // Opcode variable used for storing current opcode
     unsigned short opcode;

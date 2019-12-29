@@ -6,7 +6,7 @@
 #define CHIP_8_EMULATOR_CHIP8_EMULATOR_H
 
 #include <memory>
-//#include <SDL2/SDL.h>
+#include <SDL2/SDL.h>
 
 #include "cpu.h"
 #include "memory.h"
@@ -24,12 +24,12 @@ public:
     void initialize();
 
     /**
-       Load a game file into memory
+       Load a program file into memory
        @param name The path name of the game
      */
-    void loadGame(std::string pathName);
+    void loadProgram(std::string pathName);
 
-    Display display;
+    Display *display;
     Memory memory;
     CPU cpu;
 };
