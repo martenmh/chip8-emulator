@@ -36,21 +36,48 @@ void Display::clearScreen() {
     pixel.setAll(PixelUnset);
 }
 
-int Display::flipPixel(int x, int y, int height){
+int Display::flipPixel(unsigned short x, unsigned short y, unsigned short height){
+
+    unsigned short pixel;
 
     bool flippedToUnset = false;
-    for(int n = 0; n < height; n++){
-        // Check if pixel is set
-        const u_char pixelStatus = pixel.at(x,y + n);
-        if(pixelStatus != PixelUnset)
-            flippedToUnset = true;
-
-        pixel.at(x,y + n) = pixelStatus == PixelUnset ? PixelSet : PixelUnset;   // Flip pixel
+    for (int yline = 0; yline < height; yline++)
+    {
+        pixel = chip8_->memory[chip8_->cpu.I + yline];
+        for(int xline = 0; xline < 8; xline++)
+        {
+            if((pixel & (0x80 >> xline)) != 0)
+            {
+                if(gfx[(x + xline + ((y + yline) * 64))] == 1)
+                    bool flippedToUnset = true;
+                gfx[x + xline + ((y + yline) * 64)] ^= 1;
+            }
+        }
     }
 
     // After flipping pixels render the result
-    render();
+    render2();
     return flippedToUnset;
+}
+
+void Display::render2() {
+    // Get the magnitude of difference between the Chip-8 display and the SDL window
+    const int xDiff = display_width / 64;
+    const int yDiff = display_height / 32;
+
+//    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+//    SDL_RenderClear(renderer);
+
+    // Set new color for drawn pixels
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+
+    for (int x = 0; x < display_width; ++x)
+        for(int y = 0; y < display_height; ++y)
+            if(gfx[(x / xDiff) * (y  / yDiff)] != PixelUnset)    // Keep black pixels black
+                SDL_RenderDrawPoint(renderer, x, y);
+
+    // Render result
+    SDL_RenderPresent(renderer);
 }
 
 void Display::render() {
