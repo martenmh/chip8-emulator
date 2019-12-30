@@ -10,8 +10,9 @@
 
 #include "cpu.h"
 #include "memory.h"
-#include "input.h"
+#include "keyboard.h"
 #include "display.h"
+#include "keyboard.h"
 
 class Chip8 {
 public:
@@ -19,19 +20,20 @@ public:
     ~Chip8();
 
     /**
-       Initialize all parts
-     */
-    void initialize();
-
-    /**
        Load a program file into memory
        @param name The path name of the game
      */
     void loadProgram(std::string pathName);
+    inline bool isRunning(){ return enabled; }
 
     Display *display;
     Memory memory;
     CPU cpu;
+    Keyboard keyboard;
+
+    inline void quit(){ enabled = false; }
+
+    bool enabled;
 };
 
 

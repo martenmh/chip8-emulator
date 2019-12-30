@@ -8,43 +8,56 @@ void output(std::ostream &os = std::cout, std::string msg = ""){
 }
 
 int main(int argc, char *argv[]){
-    if(argc < 1) {
+    bool verbose{false}, debug{false};
+
+    if(argc > 2) {
         std::string usage = "Usage: ";
-        (usage += argv[0]) += " [-options] [arguments..]";
+        (usage += argv[0]) += " [-option]";
+        usage += "\nOptions:\n"
+                                "\t-v,--verbose Specify if you want to have any console output from the program\n"
+                                "\t-h,--help\t\tShow the available commands";
         output(std::cerr, usage);
-    } else {
-        std::string arg = argv[2];
-        if(arg == "-v") {
-            output(std::cout, "");
+        return 1;
+    } else if(argc == 2) {
+        std::string arg = argv[1];
+        if(arg == "-v" || arg == "--verbose") {
+            verbose = true;
         } else if(arg == "-h" || arg == "--help"){
-            output(std::cout,"Options\n"
-                             "\t-h,--help\t\tShow this help message\n"
-                             "\t-d,--destination DESTINATION\tSpecify the destination path");
+            output(std::cout,"Options:\n"
+                             "\t-v,--verbose Specify if you want to have any console output from the program\n"
+                             "\t-h,--help\t\tShow the available commands"
+                             );
             return 0;
+        } else if(arg == "-d" || arg == "--debug"){
+            debug = true;
         }
     }
 
-    Chip8 chip8;
-    std::cout << "initializing" << std::endl;
-    chip8.initialize();
-    std::cout << "loading game" << std::endl;
-    chip8.loadProgram("res/tic-tac-toe.ch8");
-    std::cout << "starting cpu" << std::endl;
 
+    if(verbose)
+        std::cout << "Initializing.." << std::endl;
+    Chip8 chip8 = Chip8();
+
+    if(verbose)
+        std::cout << "Loading game tic-tac-toe.." << std::endl;
+
+    chip8.loadProgram("res/code4.ch8");
 
     // Get CPU information
-    // chip8.cpu.getCPUInfo(std::cout);
-    chip8.cpu.getDisassembly(std::cout);
 
+    //chip8.cpu.getDisassembly(std::cout);
 
-    std::cout << "waiting" << std::endl;
-    for(auto r : {1,2,3}){
-        chip8.display->flipPixel(r * 3,r* 3,3 * r);
-        SDL_Delay(3000);
+    while(chip8.isRunning()){
+        if(debug)
+            chip8.keyboard.waitForKeyPress(SDL_SCANCODE_RETURN);
 
+        chip8.keyboard.pollKeyPad();
+        chip8.cpu.emulateCycle();
+        // Write current assembly
+        //chip8.cpu.getOpcode(chip8.cpu.opcode, std::cout);
+        chip8.cpu.getCPUInfo(std::cout);
     }
-//    for(;;){
-//        chip8.cpu.emulateCycle();
-//    }
+    if(verbose)
+        std::cout << "Stopping emulator.." << std::endl;
     return 0;
 }

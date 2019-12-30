@@ -14,7 +14,7 @@ add_executable(chip-8-emulator
         include/chip8.h src/chip8.cpp       # chip8
         include/memory.h src/memory.cpp     # memory
         include/display.h src/display.cpp   # display
-        include/input.h src/input.cpp       # input
+        include/keyboard.h src/keyboard.cpp       # input
         include/sound.h src/sound.cpp       # sound
         src/main.cpp)                       # main
 

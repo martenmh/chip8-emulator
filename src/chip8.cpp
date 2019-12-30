@@ -7,26 +7,31 @@
 #include <iostream>
 #include <fstream>
 
-Chip8::Chip8(){
+Chip8::Chip8(): enabled{true}{
+    cpu = CPU(this);
+
     // Initialize display
     display = new Display(this,
-            "An SDL2 Window",
-            SDL_WINDOWPOS_UNDEFINED,
-            SDL_WINDOWPOS_UNDEFINED,
-            640,
-            320,
-            SDL_WINDOW_OPENGL);
+                          "An SDL2 Window",
+                          SDL_WINDOWPOS_UNDEFINED,
+                          SDL_WINDOWPOS_UNDEFINED,
+                          640,
+                          320,
+                          SDL_WINDOW_OPENGL);
+
+    keyboard = Keyboard(this);
 }
 
 Chip8::~Chip8(){
+    if(enabled)
+        enabled = false;
+
     // TODO: Use smart pointers
     delete display;
     SDL_Quit();
 }
 
-void Chip8::initialize() {
-    cpu.initialize(this);
-}
+
 
 void Chip8::loadProgram(std::string pathName) {
     std::ifstream file(pathName);

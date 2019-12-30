@@ -6,7 +6,7 @@
 #define CHIP_8_EMULATOR_CHIP8_H
 
 #include <ostream>
-
+#include <vector>
 class Chip8;
 
 /**
@@ -36,9 +36,22 @@ class Chip8;
  */
 #define VF V[15]    // flag, carry flag, "no borrow" flag, carry flag
 
+/**
+   Convert a decimal to a 12 bit (3 * 4 bit) binary coded decimal (up to 999)
+   Each number in the decimal will be converted to 4 bits and put into the bcd
+   Example  365
+   Binary:  0001 0110 0101
+   BCD:     0011 0101 0111
+            3    6    5
+   @return The binary coded decimal
+ */
+static std::vector<unsigned char> binaryCodedDecimal(unsigned short int decimal);
+
 
 class CPU {
 public:
+    CPU(Chip8 *chip8);
+    CPU();
     void initialize(Chip8 *chip8);
 
     /* All instructions are performed here */
@@ -72,8 +85,9 @@ public:
 
     unsigned short sp;          // Stack pointer
 
-    // Keypad 0-F
-    unsigned char key[16];
+    void getOpcode(unsigned short opcode, std::ostream &os);
+
+private:
     // Parent
     Chip8 *chip8_;
 
