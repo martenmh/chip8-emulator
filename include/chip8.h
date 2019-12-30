@@ -26,13 +26,15 @@ public:
     void loadProgram(std::string pathName);
     inline bool isRunning(){ return enabled; }
 
-    Display *display;
+    // The various Chip8 parts
     Memory memory;
     CPU cpu;
-    Keyboard keyboard;
+    Display *display;   // Output
+    Keyboard keyboard;  // Input
 
     inline void quit(){ enabled = false; }
 
+private:
     bool enabled;
 };
 

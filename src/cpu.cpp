@@ -64,11 +64,12 @@ void CPU::emulateCycle() {
         /* Jumps & Calls */
         case 0x1000:   // 1xxx Jump to address $xxx
             pc = opcode & 0x0FFF;
+            pc +=2;
             break;
         case 0x2000:   // 2xxx Call subroutine $xxx
             // Set return address
             chip8_->memory.stack[sp] = pc;
-            sp++;
+            ++sp;
             pc = opcode & 0x0FFF;   // Set opcode to address
             break;
         case 0xB000:   // Bxxx Jump to address #(xxx + V0)
@@ -77,73 +78,83 @@ void CPU::emulateCycle() {
 
             /* Comparisons */
         case 0x3000:   // 3xnn Skip if Equal (Comparing immediate value to a register, if(Vx == nn))
-            if(V[opcode & 0x0F00] == (opcode & 0x00FF))
+            if(V[(opcode & 0x0F00) >> 8] == (opcode & 0x00FF))
                 pc += 2;
             pc +=2;
             break;
         case 0x4000:   // Skip if Not Equal (Comparing immediate value to a register, if(Vx == nn))
-            if(V[opcode & 0x0F00] != (opcode & 0x00FF))
+            if(V[(opcode & 0x0F00) >> 8] != (opcode & 0x00FF))
                 pc += 2;
             pc +=2;
             break;
         case 0x5000:   // Skip if Equal (Comparing registers, if(Vx == Vy))
-            if(V[opcode & 0x0F00] == V[opcode & 0x00F0])
+            if(V[(opcode & 0x0F00) >> 8] == V[(opcode & 0x00F0) >> 4])
                 pc += 2;
             pc +=2;
             break;
         case 0x9000:   // Skip if Not Equal (Comparing registers, if(Vx == Vy))
-            if(V[opcode & 0x0F00] != V[opcode & 0x00F0])
+            if(V[(opcode & 0x0F00) >> 8] != V[(opcode & 0x00F0) >> 4])
                 pc += 2;
             pc +=2;
             break;
 
-            /* Immediate values and Register operations */
+        /* Immediate values and Register operations */
         case 0x6000:    // 6xnn Assign immediate value to register Vx
-            V[opcode & 0x0F00] = opcode & 0x00FF;
+            V[(opcode & 0x0F00) >> 8] = opcode & 0x00FF;
             pc += 2;
             break;
         case 0x7000:    // 7xnn Add immediate value to Vx, Vx += nn
-            V[opcode & 0x0F00] += opcode & 0x00FF;
+            V[(opcode & 0x0F00) >> 8] += opcode & 0x00FF;
             pc += 2;
             break;
 
-            /* Register to register operations */
+        /* Register to register operations */
         case 0x8000:
             switch(opcode & 0x000F){
                 case 0x0000:   // 8xx0 Move register to register (Vx = Vy)
-                    V[opcode & 0x0F00] = V[opcode & 0x00F0];
+                    V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x00F0) >> 4];
                     pc += 2;
-                    break;
+                break;
                 case 0x0001:   // 8xy1 OR x |= y
-                    V[opcode & 0x0F00] |= V[opcode & 0x00F0];
+                    V[(opcode & 0x0F00) >> 8] |= V[(opcode & 0x00F0) >> 4];
                     pc += 2;
-                    break;
+                break;
                 case 0x0002:   // 8xy2 AND x &= y
-                    V[opcode & 0x0F00] &= V[opcode & 0x00F0];
+                    V[(opcode & 0x0F00) >> 8] &= V[(opcode & 0x00F0) >> 4];
                     pc += 2;
-                    break;
+                break;
                 case 0x0003:   // 8xy3 XOR x ^= y
-                    V[opcode & 0x0F00] |= V[opcode & 0x00F0];
+                    V[(opcode & 0x0F00) >> 8] |= V[(opcode & 0x00F0) >> 4];
                     pc += 2;
-                    break;
+                break;
                 case 0x0004:   // 8xy4 Add x += y
-                    V[opcode & 0x0F00] += V[opcode & 0x00F0];
+                    if(V[(opcode & 0x00F0) >> 4] > (0xFF - V[(opcode & 0x0F00) >> 8]))
+                        VF = 1; // Carry
+                    else
+                        VF = 0;
+
+                    V[(opcode & 0x0F00) >> 8] += V[(opcode & 0x00F0) >> 4];
                     pc += 2;
-                    break;
+                break;
                 case 0x0005:   // 8xy5 Subtract x -= y
-                    V[opcode & 0x0F00] -= V[opcode & 0x00F0];
+                    if(V[(opcode & 0x00F0) >> 4] < (0xFF - V[(opcode & 0x0F00) >> 8]))
+                        VF = 1; // Carry
+                    else
+                        VF = 0;
+
+                    V[(opcode & 0x0F00) >> 8] -= V[(opcode & 0x00F0) >> 4];
                     pc += 2;
                     break;
                 case 0x0006:   // 8xy6 Shift right x >>= 1
-                    V[opcode & 0x0F00] >>= 1;
+                    V[(opcode & 0x0F00) >> 8] >>= 1;
                     pc += 2;
                     break;
                 case 0x0007:   // 8xy7 Subtract backwards x = y - x
-                    V[opcode & 0x0F00] = V[opcode & 0x00F0] - V[opcode & 0x0F00];
+                    V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x00F0) >> 4] - V[(opcode & 0x0F00) >> 8];
                     pc += 2;
                     break;
                 case 0x000E:   // 8xyE Shift left x <<= y
-                    V[opcode & 0x0F00] <<= 1;
+                    V[(opcode & 0x0F00) >> 8] <<= 1;
                     pc += 2;
                     break;
             }
@@ -155,29 +166,29 @@ void CPU::emulateCycle() {
             pc += 2;
             break;
         case 0xC000:    // Cxnn Set Vx to a random number & nn (Vx = rand(0,255) & nn)
-            V[opcode & 0x0F00] = (std::rand() % 255) & (opcode & 0x00FF);
+            V[(opcode & 0x0F00) >> 8] = (std::rand() % 255) & (opcode & 0x00FF);
             pc += 2;
             break;
 
-            /* Display */
+        /* Display */
         case 0xD000:   // Dxyn Display value n in (x,y)
             // Set flags register (1 if any pixel that was set has been unset)
-            VF = chip8_->display->flipPixel(opcode & 0x0F00, opcode & 0x00F0, opcode & 0x000F);
-            sp += 2;
+            VF = chip8_->display->flipPixel(V[(opcode & 0x0F00) >> 8], V[(opcode & 0x00F0) >> 4], opcode & 0x000F);
+            pc += 2;
             break;
 
             /* User input */
         case 0xE000:
             switch(opcode & 0x000F){
                 case 0x000E:   // Ex9E Skip next instruction if the key in Vx is pressed
-                    if(chip8_->keyboard.keyIsPressed(opcode & 0x0F00))
-                        sp += 2;    // sp += 4 in total
-                    sp += 2;
+                    if(chip8_->keyboard.keyIsPressed((opcode & 0x0F00) >> 8))
+                        pc += 2;    // pc += 4 in total
+                    pc += 2;
                 break;
                 case 0x0001:   // ExA1 Skip next instruction if the key in Vx is not pressed
-                    if(!chip8_->keyboard.keyIsPressed(opcode & 0x0F00))
-                        sp += 2;    // sp += 4 in total
-                    sp += 2;
+                    if(!chip8_->keyboard.keyIsPressed((opcode & 0x0F00) >> 8))
+                        pc += 2;    // pc += 4 in total
+                    pc += 2;
                 break;
             }
             break;
@@ -186,27 +197,27 @@ void CPU::emulateCycle() {
         case 0xF000:
             switch(opcode & 0x00FF){
                 case 0x0007:   // Fx07 Move the value of the delay timer into register Vx
-                    V[opcode & 0x0F00] = delay_timer;
+                    V[(opcode & 0x0F00) >> 8] = delay_timer;
                     pc += 2;
                     break;
                 case 0x000A:   // Fx0A Wait for a key press and store it in register Vx
-                    V[opcode & 0x0F00] = chip8_->keyboard.waitForKeyPress();
+                    V[(opcode & 0x0F00) >> 8] = chip8_->keyboard.waitForKeyPress();
                     pc += 2;
                     break;
                 case 0x0015:   // Fx15 Set delay timer to the value in register Vx
-                    delay_timer = V[opcode & 0x0F00];
+                    delay_timer = V[(opcode & 0x0F00) >> 8];
                     pc += 2;
                     break;
                 case 0x0018:   // Fx18 Set sound timer to the value in register Vx
-                    sound_timer = V[opcode & 0x0F00];
+                    sound_timer = V[(opcode & 0x0F00) >> 8];
                     pc += 2;
                     break;
                 case 0x001e:   // Fx1e Add register value Vx to I (Address register)
-                    I += V[opcode & 0x0F00];
+                    I += V[(opcode & 0x0F00) >> 8];
                     pc += 2;
                 break;
                 case 0x0029:   // Fx29 Set I to the value in register Vx
-                    I = V[opcode & 0x0F00];
+                    I = V[(opcode & 0x0F00) >> 8];
                     pc += 2;
                 break;
                 case 0x0033:   // Fx33 Store the Binary-Coded decimal representation of register Vx in I, I+1 and I+2
@@ -216,16 +227,16 @@ void CPU::emulateCycle() {
                         chip8_->memory[I + 1] = (short)bcdDigits[1];
                         chip8_->memory[I + 2] = (short)bcdDigits[2];
                     }
-                    sp += 2;
+                    pc += 2;
                 break;
                 case 0x0055:   // Fx55 Store V0-Vx in memory starting at I
-                    for(int i = 0; i <= opcode & 0x0F00; i++)
+                    for(int i = 0; i <= (opcode & 0x0F00) >> 8; i++)
                         chip8_->memory[I + i] = V[i];
 
                     pc += 2;
                     break;
                 case 0x0065:   // Fx65 Fill V0-Vx in memory starting at I
-                    for(int i = 0; i <= opcode & 0x0F00; i++)
+                    for(int i = 0; i <= (opcode & 0x0F00) >> 8; i++)
                         chip8_->memory[I + i] = V[i];
 
                     pc += 2;
@@ -235,7 +246,7 @@ void CPU::emulateCycle() {
         default:
             // Unknown
             printf ("Unknown opcode: 0x%X\n", opcode);
-            sp += 2;
+            pc += 2;
             break;
     }
 
@@ -260,22 +271,22 @@ void CPU::getOpcode(unsigned short opcode, std::ostream &os){
             }
             break;
 
-            /* Jumps & Calls */
+        /* Jumps & Calls */
         case 0x1000: os << "JMP #0x" << (opcode & 0x0FFF); break;
         case 0x2000: os << "CALL #0x" << (opcode & 0x0FFF); break;
         case 0xB000: os << "JMP #0x" <<  (opcode & 0x0FFF) << "(V0)"; break;
 
-            /* Comparisons */
+        /* Comparisons */
         case 0x3000: os << "SKIP.EQ $0x" << (opcode & 0x0F00) << ", 0x" << (opcode & 0x00FF); break;
         case 0x4000: os << "SKIP.NE $0x" << (opcode & 0x0F00) << ", 0x" << (opcode & 0x00FF); break;
         case 0x5000: os << "SKIP.EQ $0x" << (opcode & 0x0F00) << ", $0x" << (opcode & 0x00F0); break;
         case 0x9000: os << "SKIP.NE $0x%X" << (opcode & 0x0F00) << ", $0x" << (opcode & 0x00F0); break;
 
-            /* Immediate values and Register operations */
+        /* Immediate values and Register operations */
         case 0x6000: os << "MOV $0x" << (opcode & 0x0F00) << ", 0x" << (opcode & 0x0F00); break;
         case 0x7000: os << "ADD $0x" << (opcode & 0x0F00) << ", #0x" << (opcode & 0x0F00); break;
 
-            /* Register to register operations */
+        /* Register to register operations */
         case 0x8000:
             switch(opcode & 0x000F){
                 case 0x0000: os << "MOV $0x" << (opcode & 0x0F00) << ", $0x" << (opcode & 0x00FF); break;
@@ -290,7 +301,7 @@ void CPU::getOpcode(unsigned short opcode, std::ostream &os){
             }
             break;
 
-            /* Other */
+        /* Other */
         case 0xA000: os << "SETI #0x" << (opcode & 0x0FFF); break;
         case 0xC000: os << "RAND $0x" << (opcode & 0x0F00) << ", 0x" << (opcode & 0x00FF); break;
 
@@ -319,7 +330,7 @@ void CPU::getOpcode(unsigned short opcode, std::ostream &os){
                 case 0x0065: os << "FILL $0x" <<  (opcode & 0x0F00); break;
             }
             break;
-        default: os << "Unknown opcode: 0x" << opcode;
+        default: os << "Unknown opcode: 0x" << opcode; break;
     }
 
     os << "\n";

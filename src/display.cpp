@@ -58,8 +58,8 @@ void Display::render() {
     const int xDiff = display_width / 64;
     const int yDiff = display_height / 32;
 
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
-    SDL_RenderClear(renderer);
+//    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+//    SDL_RenderClear(renderer);
 
     // Set new color for drawn pixels
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);

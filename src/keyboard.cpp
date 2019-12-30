@@ -29,7 +29,7 @@ Keyboard::Keyboard() {
 }
 
 unsigned char Keyboard::waitForKeyPress() {
-    while(chip8_->enabled){
+    while(chip8_->isRunning()){
         // Get current pressed keys
         pollKeyPad();
         // If any key is pressed return it as the pressed key
@@ -40,7 +40,7 @@ unsigned char Keyboard::waitForKeyPress() {
 }
 
 void Keyboard::waitForKeyPress(unsigned short key) {
-    while(chip8_->enabled){
+    while(chip8_->isRunning()){
         // Get current pressed keys
         pollKeyPad();
         // If key is the pressed key break out of the loop or if the

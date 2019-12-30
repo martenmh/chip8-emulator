@@ -28,9 +28,9 @@ struct Pixel{
     inline u_char& at(int x, int y){
         // Bound checking
         if(x < 0 || x > 64)
-            std::cerr << "Pixel out of bounds, please give a value between 0 and 64" << std::endl;
+            std::cerr << "Pixel (" << x << ", " << y << ") out of bounds, please give x a value between 0 and 64" << std::endl;
         if(y < 0 || y > 32)
-            std::cerr << "Pixel out of bounds, please give a value between 0 and 32" << std::endl;
+            std::cerr << "Pixel(" << x << ", " << y << ") out of bounds, please give y a value between 0 and 32" << std::endl;
         return gfc[x][y];
     }
 };

@@ -41,8 +41,9 @@ void Chip8::loadProgram(std::string pathName) {
     int i = 0;
     // Load game up to 0xEFF or EOF
     while(!file.eof() && i < 0xEFF - 0x001 ) {
-        // Skip spaces & enters
+
         char c = file.get();
+        // Skip spaces & enters
         if(c == ' ' || c == '\n')
             continue;
 

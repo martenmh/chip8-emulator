@@ -41,20 +41,23 @@ int main(int argc, char *argv[]){
     if(verbose)
         std::cout << "Loading game tic-tac-toe.." << std::endl;
 
-    chip8.loadProgram("res/code4.ch8");
+    chip8.loadProgram("res/Airplane.ch8");
 
     // Get CPU information
 
     //chip8.cpu.getDisassembly(std::cout);
 
     while(chip8.isRunning()){
+        // If in debug mode wait until the user presses enter for the next instruction
         if(debug)
             chip8.keyboard.waitForKeyPress(SDL_SCANCODE_RETURN);
+
+        if(!chip8.isRunning()) break;
 
         chip8.keyboard.pollKeyPad();
         chip8.cpu.emulateCycle();
         // Write current assembly
-        //chip8.cpu.getOpcode(chip8.cpu.opcode, std::cout);
+        chip8.cpu.getOpcode(chip8.cpu.opcode, std::cout);
         chip8.cpu.getCPUInfo(std::cout);
     }
     if(verbose)
