@@ -53,22 +53,22 @@ void CPU::emulateCycle() {
                 case 0x00EE:   // 00EE Return from subroutine
                     // Set program counter to return address in stack
                     sp--;
-                    pc = chip8_->memory.stack[sp];
-                    break;
-                default:        // 0xxx CALL RCA_1802 at $xxx
+                    pc = chip8_->stack[sp];
                     pc += 2;
                     break;
+                default:        // 0xxx CALL RCA_1802 at $xxx
+                    pc +=2;
+                break;
             }
             break;
 
         /* Jumps & Calls */
         case 0x1000:   // 1xxx Jump to address $xxx
             pc = opcode & 0x0FFF;
-            pc +=2;
             break;
         case 0x2000:   // 2xxx Call subroutine $xxx
             // Set return address
-            chip8_->memory.stack[sp] = pc;
+            chip8_->stack[sp] = pc;
             ++sp;
             pc = opcode & 0x0FFF;   // Set opcode to address
             break;
@@ -80,22 +80,22 @@ void CPU::emulateCycle() {
         case 0x3000:   // 3xnn Skip if Equal (Comparing immediate value to a register, if(Vx == nn))
             if(V[(opcode & 0x0F00) >> 8] == (opcode & 0x00FF))
                 pc += 2;
-            pc +=2;
+            pc += 2;
             break;
         case 0x4000:   // Skip if Not Equal (Comparing immediate value to a register, if(Vx == nn))
             if(V[(opcode & 0x0F00) >> 8] != (opcode & 0x00FF))
                 pc += 2;
-            pc +=2;
+            pc += 2;
             break;
         case 0x5000:   // Skip if Equal (Comparing registers, if(Vx == Vy))
             if(V[(opcode & 0x0F00) >> 8] == V[(opcode & 0x00F0) >> 4])
                 pc += 2;
-            pc +=2;
+            pc += 2;
             break;
         case 0x9000:   // Skip if Not Equal (Comparing registers, if(Vx == Vy))
             if(V[(opcode & 0x0F00) >> 8] != V[(opcode & 0x00F0) >> 4])
                 pc += 2;
-            pc +=2;
+            pc += 2;
             break;
 
         /* Immediate values and Register operations */
@@ -128,6 +128,8 @@ void CPU::emulateCycle() {
                     pc += 2;
                 break;
                 case 0x0004:   // 8xy4 Add x += y
+                    // Check how much the char can still hold by (255 - VX), if the remaining number to be added is larger than the value it can hold there is a carry
+                    // Vy > (255 - Vx) == carry
                     if(V[(opcode & 0x00F0) >> 4] > (0xFF - V[(opcode & 0x0F00) >> 8]))
                         VF = 1; // Carry
                     else
@@ -137,12 +139,14 @@ void CPU::emulateCycle() {
                     pc += 2;
                 break;
                 case 0x0005:   // 8xy5 Subtract x -= y
-                    if(V[(opcode & 0x00F0) >> 4] < (0xFF - V[(opcode & 0x0F00) >> 8]))
-                        VF = 1; // Carry
+                    // If y is larger than x set borrow flag
+                    if(V[(opcode & 0x00F0) >> 4] > (V[(opcode & 0x0F00) >> 8]))
+                        VF = 1; // Borrow
                     else
                         VF = 0;
 
                     V[(opcode & 0x0F00) >> 8] -= V[(opcode & 0x00F0) >> 4];
+
                     pc += 2;
                     break;
                 case 0x0006:   // 8xy6 Shift right x >>= 1
@@ -173,7 +177,7 @@ void CPU::emulateCycle() {
         /* Display */
         case 0xD000:   // Dxyn Display value n in (x,y)
             // Set flags register (1 if any pixel that was set has been unset)
-            VF = chip8_->display->flipPixel(V[(opcode & 0x0F00) >> 8], V[(opcode & 0x00F0) >> 4], opcode & 0x000F);
+            VF = chip8_->display->display(V[(opcode & 0x0F00) >> 8], V[(opcode & 0x00F0) >> 4], opcode & 0x000F);
             pc += 2;
             break;
 
@@ -232,13 +236,11 @@ void CPU::emulateCycle() {
                 case 0x0055:   // Fx55 Store V0-Vx in memory starting at I
                     for(int i = 0; i <= (opcode & 0x0F00) >> 8; i++)
                         chip8_->memory[I + i] = V[i];
-
                     pc += 2;
                     break;
                 case 0x0065:   // Fx65 Fill V0-Vx in memory starting at I
                     for(int i = 0; i <= (opcode & 0x0F00) >> 8; i++)
                         chip8_->memory[I + i] = V[i];
-
                     pc += 2;
                     break;
             }
@@ -246,7 +248,6 @@ void CPU::emulateCycle() {
         default:
             // Unknown
             printf ("Unknown opcode: 0x%X\n", opcode);
-            pc += 2;
             break;
     }
 
@@ -258,7 +259,8 @@ void CPU::emulateCycle() {
         --sound_timer;
     }
 }
-
+#define SECOND_NIBBLE ((opcode & 0x0F00) >> 8)
+#define THIRD_NIBBLE ((opcode & 0x00F0) >> 4)
 void CPU::getOpcode(unsigned short opcode, std::ostream &os){
     switch(opcode & 0xF000){
         /* Other */
@@ -272,32 +274,32 @@ void CPU::getOpcode(unsigned short opcode, std::ostream &os){
             break;
 
         /* Jumps & Calls */
-        case 0x1000: os << "JMP #0x" << (opcode & 0x0FFF); break;
-        case 0x2000: os << "CALL #0x" << (opcode & 0x0FFF); break;
-        case 0xB000: os << "JMP #0x" <<  (opcode & 0x0FFF) << "(V0)"; break;
+        case 0x1000: os << "JMP 0x" << (opcode & 0x0FFF); break;
+        case 0x2000: os << "CALL 0x" << (opcode & 0x0FFF); break;
+        case 0xB000: os << "JMP 0x" <<  (opcode & 0x0FFF) << "(V0)"; break;
 
         /* Comparisons */
-        case 0x3000: os << "SKIP.EQ $0x" << (opcode & 0x0F00) << ", 0x" << (opcode & 0x00FF); break;
-        case 0x4000: os << "SKIP.NE $0x" << (opcode & 0x0F00) << ", 0x" << (opcode & 0x00FF); break;
-        case 0x5000: os << "SKIP.EQ $0x" << (opcode & 0x0F00) << ", $0x" << (opcode & 0x00F0); break;
-        case 0x9000: os << "SKIP.NE $0x%X" << (opcode & 0x0F00) << ", $0x" << (opcode & 0x00F0); break;
+        case 0x3000: os << "SKIP.EQ V" << SECOND_NIBBLE << ", " << (opcode & 0x00FF); break;
+        case 0x4000: os << "SKIP.NE V" << SECOND_NIBBLE << ", " << (opcode & 0x00FF); break;
+        case 0x5000: os << "SKIP.EQ V" << SECOND_NIBBLE << ", V" << THIRD_NIBBLE; break;
+        case 0x9000: os << "SKIP.NE V" << SECOND_NIBBLE << ", V" << THIRD_NIBBLE; break;
 
         /* Immediate values and Register operations */
-        case 0x6000: os << "MOV $0x" << (opcode & 0x0F00) << ", 0x" << (opcode & 0x0F00); break;
-        case 0x7000: os << "ADD $0x" << (opcode & 0x0F00) << ", #0x" << (opcode & 0x0F00); break;
+        case 0x6000: os << "MOV V" << SECOND_NIBBLE << ", 0x" << (opcode & 0x00FF); break;
+        case 0x7000: os << "ADD V" << SECOND_NIBBLE << ", 0x" << (opcode & 0x00FF); break;
 
         /* Register to register operations */
         case 0x8000:
             switch(opcode & 0x000F){
-                case 0x0000: os << "MOV $0x" << (opcode & 0x0F00) << ", $0x" << (opcode & 0x00FF); break;
-                case 0x0001: os << "OR $0x" << (opcode & 0x0F00) << ", $0x" << (opcode & 0x00FF); break;
-                case 0x0002: os << "AND $0x" << (opcode & 0x0F00) << ", $0x" << (opcode & 0x00FF); break;
-                case 0x0003: os << "XOR $0x" << (opcode & 0x0F00) << ", $0x" << (opcode & 0x00FF); break;
-                case 0x0004: os << "ADD $0x" << (opcode & 0x0F00) << ", $0x" << (opcode & 0x00FF); break;
-                case 0x0005: os << "SUB $0x" << (opcode & 0x0F00) << ", $0x" << (opcode & 0x00FF); break;
-                case 0x0006: os << "SHR $0x" << (opcode & 0x0F00) << ", $0x" << (opcode & 0x00FF); break;
-                case 0x0007: os << "SUBB $0x" << (opcode & 0x0F00); break;
-                case 0x000E: os << "SHL $0x" << (opcode & 0x0F00) << ", $0x" <<  (opcode & 0x00FF); break;
+                case 0x0000: os << "MOV V" << SECOND_NIBBLE << ", $0x" << (opcode & 0x00FF); break;
+                case 0x0001: os << "OR V" << SECOND_NIBBLE << ", $0x" << (opcode & 0x00FF); break;
+                case 0x0002: os << "AND V" << SECOND_NIBBLE << ", $0x" << (opcode & 0x00FF); break;
+                case 0x0003: os << "XOR V" << SECOND_NIBBLE << ", $0x" << (opcode & 0x00FF); break;
+                case 0x0004: os << "ADD V" << SECOND_NIBBLE << ", $0x" << (opcode & 0x00FF); break;
+                case 0x0005: os << "SUB V" << SECOND_NIBBLE << ", $0x" << (opcode & 0x00FF); break;
+                case 0x0006: os << "SHR V" << SECOND_NIBBLE << ", $0x" << (opcode & 0x00FF); break;
+                case 0x0007: os << "SUBB V" << SECOND_NIBBLE; break;
+                case 0x000E: os << "SHL V" << SECOND_NIBBLE << ", $0x" <<  (opcode & 0x00FF); break;
             }
             break;
 
@@ -333,7 +335,7 @@ void CPU::getOpcode(unsigned short opcode, std::ostream &os){
         default: os << "Unknown opcode: 0x" << opcode; break;
     }
 
-    os << "\n";
+    os << std::endl;
 }
 
 void CPU::getDisassembly(std::ostream &os) {
@@ -350,8 +352,7 @@ void CPU::getDisassembly(std::ostream &os) {
 #include <iomanip>  // Formatting
 using namespace std;
 
-void CPU::getCPUInfo(std::ostream &os) {
-    const int width = 23;
+void CPU::getCPUInfo(std::ostream &os, unsigned int width) {
     os << setw(width) << left << "Current Opcode" << opcode << endl;
     // Registers (8 bit)
     os << setw(width) << left << "V0" << (int)V0 << endl;
@@ -372,7 +373,7 @@ void CPU::getCPUInfo(std::ostream &os) {
     os << setw(width) << left << "VF (Flags register)" << (int)VF << endl;
     // Register (16 bit)
     os << setw(width) << left << "I  (Address register)" << (int)I << endl;
-    os << setw(width) << left << "pc (Program counter)" << (int)pc << endl;
+    os << setw(width) << left << "pc (Program counter)" << (int)pc <<  endl;
     // Timers
     os << setw(width) << left << "delay_timer" << (int)delay_timer << endl;
     os << setw(width) << left << "sound_timer" << (int)sound_timer << endl;

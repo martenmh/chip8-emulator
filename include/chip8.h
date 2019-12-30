@@ -27,7 +27,13 @@ public:
     inline bool isRunning(){ return enabled; }
 
     // The various Chip8 parts
-    Memory memory;
+
+    // Memory
+    // 4kb of bytes (= unsigned char) 0x000-0x1000
+    unsigned char memory[4096];
+    // Stack to store return addresses when subroutines are called (call stack)
+    unsigned short stack[16];   // Call stack
+
     CPU cpu;
     Display *display;   // Output
     Keyboard keyboard;  // Input
@@ -36,6 +42,7 @@ public:
 
 private:
     bool enabled;
+    bool paused;
 };
 
 

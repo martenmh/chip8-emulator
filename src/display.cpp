@@ -37,6 +37,19 @@ void Display::clearScreen() {
 }
 
 int Display::flipPixel(unsigned short x, unsigned short y, unsigned short height){
+    bool flippedToUnset = false;
+    for(int n = 0; n < height; n++) {
+        // Check if pixel is set
+        const u_char pixelStatus = pixel.at(x, y + n);
+        if (pixelStatus != PixelUnset)
+            flippedToUnset = true;
+    }
+    // After flipping pixels render the result
+    render();
+    return flippedToUnset;
+}
+
+int Display::flipPixel2(unsigned short x, unsigned short y, unsigned short height){
 
     unsigned short pixel;
 
@@ -85,18 +98,54 @@ void Display::render() {
     const int xDiff = display_width / 64;
     const int yDiff = display_height / 32;
 
-//    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
-//    SDL_RenderClear(renderer);
 
-    // Set new color for drawn pixels
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_RenderClear(renderer);
 
     for (int x = 0; x < display_width; ++x)
         for(int y = 0; y < display_height; ++y)
-            if(pixel.at(x / xDiff,y / yDiff) != PixelUnset)    // Keep black pixels black
+            if(pixel.at(x / xDiff,y / yDiff) != PixelUnset) {
+                // Set new color for drawn pixels
+                SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
                 SDL_RenderDrawPoint(renderer, x, y);
+            } else{
+                SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+                SDL_RenderDrawPoint(renderer, x, y);
+            }
+
 
     // Render result
     SDL_RenderPresent(renderer);
+}
+/**
+  Draws a sprite at coordinate (VX, VY) that has a width of 8 pixels and a height of N pixels.
+  Each row of 8 pixels is read as bit-coded starting from memory location I;
+  I value doesn’t change after the execution of this instruction.
+  As described above, VF is set to 1 if any screen pixels are
+  flipped from set to unset when the sprite is drawn, and to 0 if that doesn’t happen
+  @param x
+  @param y
+  @param height
+  @return
+ */
+int Display::display(unsigned short x, unsigned short y, unsigned short n) {
+    // Check if n is between 1 and 15
+    if(n < 1 || n > 15)
+        std::cerr << "Please give a height between 1 and 15" << std::endl;
+
+    bool flippedToUnset = false;
+
+    for(int height = 0; height <= n; height++){
+        // Get the 8 bits from memory
+        auto spriteRow = chip8_->memory[chip8_->cpu.I + y];
+        for(int width = 8; width > 0; width--){
+            // Get a single bit from the row
+            bool spritePixel = (spriteRow >> width) & 1;
+            if(pixel.at(x + width,y + height) == PixelSet && spritePixel == PixelSet)
+                flippedToUnset = true;
+            pixel.at(x + width,y + height) ^= spritePixel;
+        }
+    }
+    render();
+    return flippedToUnset;
 }
 

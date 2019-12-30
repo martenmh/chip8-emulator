@@ -36,7 +36,7 @@ struct Pixel{
 };
 
 enum PixelStatus{
-    PixelSet = 255, // White
+    PixelSet = 1, // White
     PixelUnset = 0  // Black
 };
 
@@ -53,7 +53,9 @@ public:
        @return 1 if any screen pixels are flipped from set to unset, and to 0 if that doesn't happen
      */
     //int flipPixel(int x, int y, int height);
+    int display(unsigned short x, unsigned short y, unsigned short height);
     int flipPixel(unsigned short x, unsigned short y, unsigned short height);
+    int flipPixel2(unsigned short x, unsigned short y, unsigned short height);
 
     /**
        Go through all pixels and render them with the appropriate color

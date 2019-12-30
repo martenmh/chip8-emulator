@@ -6,6 +6,9 @@
 #define CHIP_8_EMULATOR_KEYBOARD_H
 
 #include <SDL2/SDL.h>
+#include <ostream>
+#include <iostream>
+
 enum key {
     // Chip8 keypad buttons
     A   = 4,
@@ -32,6 +35,17 @@ enum key {
 
 class Chip8;
 
+//  Copied from http://www.multigesture.net
+//  Keypad
+//  +-+-+-+-+
+//  |1|2|3|C|
+//  +-+-+-+-+
+//  |4|5|6|D|
+//  +-+-+-+-+
+//  |7|8|9|E|
+//  +-+-+-+-+
+//  |A|0|B|F|
+//  +-+-+-+-+
 class Keyboard {
 public:
     explicit Keyboard(Chip8 *parent);
@@ -50,6 +64,9 @@ public:
 
     /* Check if a key is pressed */
     inline bool keyIsPressed(unsigned char key){ return keypad[key]; }
+
+
+    void getKeyboardInfo(std::ostream &os = std::cout, unsigned int width = 23);
 
 private:
     Chip8 *chip8_;

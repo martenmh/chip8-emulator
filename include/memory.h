@@ -6,12 +6,8 @@
 #define CHIP_8_EMULATOR_MEMORY_H
 
 struct Memory {
-    constexpr unsigned char& operator[](int index){ return memory[index]; }
-    // 4kb of bytes (= unsigned char) 0x000-0x1000
-    unsigned char memory[4096];
+    //constexpr unsigned char& operator[](int index){ return memory[index]; }
 
-    // Stack to store return addresses when subroutines are called (call stack)
-    unsigned short stack[16];   // Call stack
 };
 
 #endif //CHIP_8_EMULATOR_MEMORY_H

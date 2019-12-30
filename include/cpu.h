@@ -7,6 +7,8 @@
 
 #include <ostream>
 #include <vector>
+#include <iostream> // cout
+
 class Chip8;
 
 /**
@@ -68,7 +70,7 @@ public:
        @param os stream to give output to
        TODO: Create GUI for CPU info
      */
-    void getCPUInfo(std::ostream &os);
+    void getCPUInfo(std::ostream &os = std::cout, unsigned int width = 23);
 
     // Opcode variable used for storing current opcode
     unsigned short opcode;
@@ -85,7 +87,7 @@ public:
 
     unsigned short sp;          // Stack pointer
 
-    void getOpcode(unsigned short opcode, std::ostream &os);
+    static void getOpcode(unsigned short opcode, std::ostream &os = std::cout);
 
 private:
     // Parent
