@@ -29,19 +29,20 @@ CPU::CPU(Chip8 *chip8){
     sound_timer = 0;
 }
 
-
+//#define DEFAULT_UNKNOWN_OP default: chip8_->quit(UNKNOWN_OPCODE, "Unknown opcode: 0x" + Chip8::hexToReadableOpcode(opcode)); break;
+#define DEFAULT_UNKNOWN_OP default: sp += 2; break;
 void CPU::emulateCycle() {
     /* Store a byte from memory into the 2 byte opcode variable.
        Shift it so it is stored in the high byte.
        Store another byte from memory in to the lower byte */
     opcode =  chip8_->memory[pc] << 8 |  chip8_->memory[pc + 1];
-
     /*  $0x.... = Value of register
         #0x.... = Value at address
         0x.... = immediate value
         Opcodes are somewhat ordered */
     // Compare the the first nibble (mask the lower 12 bits)
     switch(opcode & 0xF000){
+        DEFAULT_UNKNOWN_OP
         /* Other */
         case 0x0000:
             // Compare the last 2 characters
@@ -51,13 +52,19 @@ void CPU::emulateCycle() {
                     pc += 2;
                     break;
                 case 0x00EE:   // 00EE Return from subroutine
-                    // Set program counter to return address in stack
+                    // Set program counter to return address in stac
                     sp--;
                     pc = chip8_->stack[sp];
                     pc += 2;
                     break;
                 default:        // 0xxx CALL RCA_1802 at $xxx
-                    pc +=2;
+                    // If xxx = 0, it's likely empty memory so just quit the emulator
+//                    if((opcode & 0x0FFF) == 0) {
+//                        //chip8_->quit(1, "Unknown opcode: 0x" + Chip8::hexToReadableOpcode(opcode));
+//                        break;
+//                    }
+                    // If is not 0 Ignore as we're not using 0x0xxx
+                    pc += 2;
                 break;
             }
             break;
@@ -73,7 +80,7 @@ void CPU::emulateCycle() {
             pc = opcode & 0x0FFF;   // Set opcode to address
             break;
         case 0xB000:   // Bxxx Jump to address #(xxx + V0)
-            pc = opcode & 0x0FFF + V0;
+            pc = (opcode & 0x0FFF) + V0;
             break;
 
             /* Comparisons */
@@ -111,6 +118,7 @@ void CPU::emulateCycle() {
         /* Register to register operations */
         case 0x8000:
             switch(opcode & 0x000F){
+                DEFAULT_UNKNOWN_OP
                 case 0x0000:   // 8xx0 Move register to register (Vx = Vy)
                     V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x00F0) >> 4];
                     pc += 2;
@@ -149,24 +157,33 @@ void CPU::emulateCycle() {
 
                     pc += 2;
                     break;
-                case 0x0006:   // 8xy6 Shift right x >>= 1
+                case 0x0006:   // 8xy6 Shift right x >>= 1  (stores least significant bit in VF)
+                    VF = (opcode & 0x0F00) & 1;
                     V[(opcode & 0x0F00) >> 8] >>= 1;
                     pc += 2;
                     break;
                 case 0x0007:   // 8xy7 Subtract backwards x = y - x
+                    // If y is larger than x set borrow flag
+                    if(V[(opcode & 0x00F0) >> 4] > (V[(opcode & 0x0F00) >> 8]))
+                        VF = 1; // Borrow
+                    else
+                        VF = 0;
+
                     V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x00F0) >> 4] - V[(opcode & 0x0F00) >> 8];
                     pc += 2;
                     break;
-                case 0x000E:   // 8xyE Shift left x <<= y
+                case 0x000E:   // 8xyE Shift left x <<= y   (stores most significant bit in VF)
+                    VF = ((opcode & 0x0F00) >> 8) & 1;
                     V[(opcode & 0x0F00) >> 8] <<= 1;
                     pc += 2;
                     break;
+
             }
             break;
 
             /* Other */
         case 0xA000:    // Axxx Set i to $xxx
-            I = chip8_->memory[opcode & 0x0FFF];
+            I = opcode & 0x0FFF;
             pc += 2;
             break;
         case 0xC000:    // Cxnn Set Vx to a random number & nn (Vx = rand(0,255) & nn)
@@ -176,14 +193,17 @@ void CPU::emulateCycle() {
 
         /* Display */
         case 0xD000:   // Dxyn Display value n in (x,y)
+            // TODO
             // Set flags register (1 if any pixel that was set has been unset)
             VF = chip8_->display->display(V[(opcode & 0x0F00) >> 8], V[(opcode & 0x00F0) >> 4], opcode & 0x000F);
+
             pc += 2;
             break;
 
             /* User input */
         case 0xE000:
             switch(opcode & 0x000F){
+                DEFAULT_UNKNOWN_OP
                 case 0x000E:   // Ex9E Skip next instruction if the key in Vx is pressed
                     if(chip8_->keyboard.keyIsPressed((opcode & 0x0F00) >> 8))
                         pc += 2;    // pc += 4 in total
@@ -200,6 +220,7 @@ void CPU::emulateCycle() {
         /* Other */
         case 0xF000:
             switch(opcode & 0x00FF){
+                DEFAULT_UNKNOWN_OP
                 case 0x0007:   // Fx07 Move the value of the delay timer into register Vx
                     V[(opcode & 0x0F00) >> 8] = delay_timer;
                     pc += 2;
@@ -220,8 +241,8 @@ void CPU::emulateCycle() {
                     I += V[(opcode & 0x0F00) >> 8];
                     pc += 2;
                 break;
-                case 0x0029:   // Fx29 Set I to the value in register Vx
-                    I = V[(opcode & 0x0F00) >> 8];
+                case 0x0029:   // Fx29 Sets I to the address of the sprite for the character in VX
+                    I = chip8_->getAddressOfChar(V[(opcode & 0x0F00) >> 8]);
                     pc += 2;
                 break;
                 case 0x0033:   // Fx33 Store the Binary-Coded decimal representation of register Vx in I, I+1 and I+2
@@ -240,14 +261,10 @@ void CPU::emulateCycle() {
                     break;
                 case 0x0065:   // Fx65 Fill V0-Vx in memory starting at I
                     for(int i = 0; i <= (opcode & 0x0F00) >> 8; i++)
-                        chip8_->memory[I + i] = V[i];
+                        V[i] = chip8_->memory[I + i];
                     pc += 2;
                     break;
             }
-            break;
-        default:
-            // Unknown
-            printf ("Unknown opcode: 0x%X\n", opcode);
             break;
     }
 
@@ -255,84 +272,91 @@ void CPU::emulateCycle() {
         --delay_timer;
     if(sound_timer > 0) {
         if (sound_timer == 1)
-            printf("BEEP");
+            std::cout << "\033[1;31mBEEP\033[0m\n" << std::endl;
+
         --sound_timer;
     }
 }
 #define SECOND_NIBBLE ((opcode & 0x0F00) >> 8)
 #define THIRD_NIBBLE ((opcode & 0x00F0) >> 4)
+#undef DEFAULT_UNKNOWN_OP
+#define DEFAULT_UNKNOWN_OP default: os << "Unknown opcode: 0x" << Chip8::hexToReadableOpcode(opcode); break;
+
 void CPU::getOpcode(unsigned short opcode, std::ostream &os){
     switch(opcode & 0xF000){
+        DEFAULT_UNKNOWN_OP
         /* Other */
         case 0x0000:
             // Compare the last 2 characters
             switch(opcode & 0x00FF){
-                case 0x00E0: os << "CLS"; break;
-                case 0x00EE: os << "RET"; break;
-                default: os << "CALL.RCA_1802 " << (opcode & 0x0FFF); break;
+                case 0x00E0: os << "CLS"; break;    // 00E0
+                case 0x00EE: os << "RET"; break;    // 00EE
+                default: os << "CALL.RCA_1802 " << (opcode & 0x0FFF); break;    // 0NNN
             }
             break;
 
         /* Jumps & Calls */
-        case 0x1000: os << "JMP 0x" << (opcode & 0x0FFF); break;
-        case 0x2000: os << "CALL 0x" << (opcode & 0x0FFF); break;
-        case 0xB000: os << "JMP 0x" <<  (opcode & 0x0FFF) << "(V0)"; break;
+        case 0x1000: os << "JMP " << (opcode & 0x0FFF); break;                                      // 1NNN
+        case 0x2000: os << "CALL " << (opcode & 0x0FFF); break;                                     // 2NNN
+        case 0xB000: os << "JMP " <<  (opcode & 0x0FFF) << "(V0)"; break;                           // BNNN (JMP NNN + V0)
 
         /* Comparisons */
-        case 0x3000: os << "SKIP.EQ V" << SECOND_NIBBLE << ", " << (opcode & 0x00FF); break;
-        case 0x4000: os << "SKIP.NE V" << SECOND_NIBBLE << ", " << (opcode & 0x00FF); break;
-        case 0x5000: os << "SKIP.EQ V" << SECOND_NIBBLE << ", V" << THIRD_NIBBLE; break;
-        case 0x9000: os << "SKIP.NE V" << SECOND_NIBBLE << ", V" << THIRD_NIBBLE; break;
+        case 0x3000: os << "SKIP.EQ V" << SECOND_NIBBLE << ", " << (opcode & 0x00FF); break;       // 3XNN
+        case 0x4000: os << "SKIP.NE V" << SECOND_NIBBLE << ", " << (opcode & 0x00FF); break;       // 4XNN
+        case 0x5000: os << "SKIP.EQ V" << SECOND_NIBBLE << ", V" << THIRD_NIBBLE; break;           // 5XY0
+        case 0x9000: os << "SKIP.NE V" << SECOND_NIBBLE << ", V" << THIRD_NIBBLE; break;           // 9XY0
 
         /* Immediate values and Register operations */
-        case 0x6000: os << "MOV V" << SECOND_NIBBLE << ", 0x" << (opcode & 0x00FF); break;
-        case 0x7000: os << "ADD V" << SECOND_NIBBLE << ", 0x" << (opcode & 0x00FF); break;
+        case 0x6000: os << "MOV V" << SECOND_NIBBLE << ", " << (opcode & 0x00FF); break;            // 6XNN
+        case 0x7000: os << "ADD V" << SECOND_NIBBLE << ", " << (opcode & 0x00FF); break;            // 7XNN
 
         /* Register to register operations */
         case 0x8000:
             switch(opcode & 0x000F){
-                case 0x0000: os << "MOV V" << SECOND_NIBBLE << ", $0x" << (opcode & 0x00FF); break;
-                case 0x0001: os << "OR V" << SECOND_NIBBLE << ", $0x" << (opcode & 0x00FF); break;
-                case 0x0002: os << "AND V" << SECOND_NIBBLE << ", $0x" << (opcode & 0x00FF); break;
-                case 0x0003: os << "XOR V" << SECOND_NIBBLE << ", $0x" << (opcode & 0x00FF); break;
-                case 0x0004: os << "ADD V" << SECOND_NIBBLE << ", $0x" << (opcode & 0x00FF); break;
-                case 0x0005: os << "SUB V" << SECOND_NIBBLE << ", $0x" << (opcode & 0x00FF); break;
-                case 0x0006: os << "SHR V" << SECOND_NIBBLE << ", $0x" << (opcode & 0x00FF); break;
-                case 0x0007: os << "SUBB V" << SECOND_NIBBLE; break;
-                case 0x000E: os << "SHL V" << SECOND_NIBBLE << ", $0x" <<  (opcode & 0x00FF); break;
+                DEFAULT_UNKNOWN_OP
+                case 0x0000: os << "MOV V" << SECOND_NIBBLE << ", " << THIRD_NIBBLE; break;         // 8XY0
+                case 0x0001: os << "OR V"  << SECOND_NIBBLE << ", " <<  THIRD_NIBBLE; break;        // 8XY1
+                case 0x0002: os << "AND V" << SECOND_NIBBLE << ", " << THIRD_NIBBLE; break;         // 8XY2
+                case 0x0003: os << "XOR V" << SECOND_NIBBLE << ", " << THIRD_NIBBLE; break;         // 8XY3
+                case 0x0004: os << "ADD V" << SECOND_NIBBLE << ", " << THIRD_NIBBLE; break;         // 8XY4
+                case 0x0005: os << "SUB V" << SECOND_NIBBLE << ", " << THIRD_NIBBLE; break;         // 8XY5
+                case 0x0006: os << "SHR V" << SECOND_NIBBLE << ", " << THIRD_NIBBLE; break;         // 8XY6
+                case 0x0007: os << "SUBB V" << SECOND_NIBBLE << ", " << THIRD_NIBBLE; break;        // 8XY7
+                case 0x000E: os << "SHL V" << SECOND_NIBBLE << ", " <<  (opcode & 0x00FF); break;   // 8XYE
             }
             break;
 
         /* Other */
-        case 0xA000: os << "SETI #0x" << (opcode & 0x0FFF); break;
-        case 0xC000: os << "RAND $0x" << (opcode & 0x0F00) << ", 0x" << (opcode & 0x00FF); break;
+        case 0xA000: os << "SETI " << (opcode & 0x0FFF); break;                                     // ANNN
+        case 0xC000: os << "RAND " << SECOND_NIBBLE << ", " << (opcode & 0x00FF); break;            // CXNN
 
             /* Display */
-        case 0xD000: os << "DISP $0x" << (opcode & 0x0F00) << ", $0x" << (opcode & 0x00F0) << ", #0x" << (opcode & 0x000F); break;
+        case 0xD000: os << "DISP V" << SECOND_NIBBLE << ", V" << THIRD_NIBBLE << ", " << (opcode & 0x000F); break;  // DXYN
 
             /* User input */
         case 0xE000:
             switch(opcode & 0x000F){
-                case 0x000E: os << "SKIP.IF.KEY.PRESSED $0x" << (opcode & 0x0F00); break;
-                case 0x0001: os << "SKIP.IF.KEY.NOTPRESSED $0x" << (opcode & 0x0F00); break;
+                DEFAULT_UNKNOWN_OP
+                case 0x000E: os << "SKIP.IF.KEY.PRESSED $0x" << SECOND_NIBBLE; break;           // EX9E
+                case 0x0001: os << "SKIP.IF.KEY.NOTPRESSED $0x" << SECOND_NIBBLE; break;        // EXA1
             }
             break;
 
             /* Other */
         case 0xF000:
             switch(opcode & 0x00FF){
-                case 0x0007: os << "GET.DELAY_TIMER $0" << (opcode & 0x0F00); break;
-                case 0x000A: os << "WAIT.KEY.AND.STORE.IN $0" << (opcode & 0x0F00); break;
-                case 0x0015: os << "SET.DELAY_TIMER $0" << (opcode & 0x0F00); break;
-                case 0x0018: os << "SET.SOUND_TIMER $0" << (opcode & 0x0F00); break;
-                case 0x001e: os << "ADD.TO.I $0" << (opcode & 0x0F00); break;
-                case 0x0029: os << "SET_I.TO $0" << (opcode & 0x0F00); break;
-                case 0x0033: os << "BIN-COD-DEC $0" << (opcode & 0x0F00); break;
-                case 0x0055: os << "STORE $0" << (opcode & 0x0F00); break;
-                case 0x0065: os << "FILL $0x" <<  (opcode & 0x0F00); break;
+                DEFAULT_UNKNOWN_OP
+                case 0x0007: os << "GET.DELAY_TIMER $0" << SECOND_NIBBLE; break;                // FX07
+                case 0x000A: os << "WAIT.KEY.AND.STORE.IN $0" << SECOND_NIBBLE; break;          // FX0A
+                case 0x0015: os << "SET.DELAY_TIMER $0" << SECOND_NIBBLE; break;                // FX15
+                case 0x0018: os << "SET.SOUND_TIMER $0" << SECOND_NIBBLE; break;                // FX18
+                case 0x001e: os << "ADD.TO.I $0" << SECOND_NIBBLE; break;                       // FX1E
+                case 0x0029: os << "SET_I.FONTADDR " << SECOND_NIBBLE; break;                       // FX29
+                case 0x0033: os << "BIN-COD-DEC $0" << SECOND_NIBBLE; break;                    // FX33
+                case 0x0055: os << "STORE $0" << SECOND_NIBBLE; break;                          // FX55
+                case 0x0065: os << "FILL $0x" <<  SECOND_NIBBLE; break;                         // FX99
             }
             break;
-        default: os << "Unknown opcode: 0x" << opcode; break;
     }
 
     os << std::endl;
@@ -353,7 +377,7 @@ void CPU::getDisassembly(std::ostream &os) {
 using namespace std;
 
 void CPU::getCPUInfo(std::ostream &os, unsigned int width) {
-    os << setw(width) << left << "Current Opcode" << opcode << endl;
+    os << setw(width) << left << "Current Opcode" << Chip8::hexToReadableOpcode(opcode) << endl;
     // Registers (8 bit)
     os << setw(width) << left << "V0" << (int)V0 << endl;
     os << setw(width) << left << "V1" << (int)V1 << endl;
@@ -384,7 +408,3 @@ void CPU::getCPUInfo(std::ostream &os, unsigned int width) {
 CPU::CPU() {
 
 }
-
-
-
-

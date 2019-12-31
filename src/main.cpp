@@ -43,7 +43,6 @@ int main(int argc, char *argv[]){
         }
     }
 
-
     if(verbose)
         std::cout << "Initializing.." << std::endl;
     Chip8 chip8 = Chip8();
@@ -54,34 +53,37 @@ int main(int argc, char *argv[]){
     chip8.loadProgram(programPath);
 
     // Get CPU information
-
     //chip8.cpu.getDisassembly(std::cout);
 
     while(chip8.isRunning()){
         // If in debug mode wait until the user presses enter for the next instruction
         if(debug) {
-            chip8.keyboard.waitForKeyPress(SDL_SCANCODE_RETURN);
+            auto pressedKey = chip8.keyboard.waitForKeyPress(SDL_SCANCODE_RETURN, SDL_SCANCODE_LEFT, SDL_SCANCODE_RIGHT);
+            if(pressedKey == Key::LEFT){
+                // reverse an instruction
+            }
         }
 
         if(!chip8.isRunning()) break;
 
-        if(verbose || debug)
+        if(debug || verbose)
             std::cout << chip8.cpu.pc << " ";
 
         chip8.keyboard.pollKeyPad();
         chip8.cpu.emulateCycle();
 
         // Write current assembly
-        if(verbose || debug) {
+        if(debug || verbose) {
             CPU::getOpcode(chip8.cpu.opcode, std::cout);
-        } if(debug) {
+        }
+        if(debug) {
             chip8.cpu.getCPUInfo(std::cout);
             chip8.keyboard.getKeyboardInfo(std::cout, 15);
-        }
-        if(debug)
             SDL_Delay(150);
+        }
     }
+
     if(verbose)
         std::cout << "Stopping emulator.." << std::endl;
-    return 0;
+    return chip8.getExitCode();
 }

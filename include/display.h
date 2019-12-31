@@ -26,11 +26,12 @@ struct Pixel{
        Get a pixel reference at a given (x,y) coordinate
      */
     inline u_char& at(int x, int y){
-        // Bound checking
-        if(x < 0 || x > 64)
-            std::cerr << "Pixel (" << x << ", " << y << ") out of bounds, please give x a value between 0 and 64" << std::endl;
-        if(y < 0 || y > 32)
-            std::cerr << "Pixel(" << x << ", " << y << ") out of bounds, please give y a value between 0 and 32" << std::endl;
+        // Pixels have to go to the other side when going out of bounds
+        while(x > 63){ x -= 64; }
+        while(x < 0){ x += 64; }
+        while(y > 31){ y -= 32; }
+        while(y < 0){ y += 32; }
+
         return gfc[x][y];
     }
 };

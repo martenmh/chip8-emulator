@@ -39,16 +39,6 @@ unsigned char Keyboard::waitForKeyPress() {
     }
 }
 
-void Keyboard::waitForKeyPress(unsigned short key) {
-    while(chip8_->isRunning()){
-        // Get current pressed keys
-        pollKeyPad();
-        // If key is the pressed key break out of the loop or if the
-        if(keys[key])
-            return;
-    }
-}
-
 #include <iomanip>  // Formatting, setw(), left
 using namespace std;
 
@@ -66,5 +56,18 @@ void Keyboard::getKeyboardInfo(std::ostream &os, unsigned int width) {
     os << setw(width) << (keypad[1] ? "1 (pressed)" : "1") << setw(width) << (keypad[2] ? "2 (pressed)" : "2") << setw(width) << (keypad[3] ? "3 (pressed)" : "3") << setw(width) << (keypad[12] ? "C (pressed)" : "C") << endl;
     os << setw(width) << (keypad[4] ? "4 (pressed)" : "4") << setw(width) << (keypad[5] ? "5 (pressed)" : "5") << setw(width) << (keypad[6] ? "6 (pressed)" : "6") << setw(width) << (keypad[13] ? "D (pressed)" : "D") << endl;
     os << setw(width) << (keypad[7] ? "7 (pressed)" : "7") << setw(width) << (keypad[8] ? "8 (pressed)" : "8") << setw(width) << (keypad[9] ? "9 (pressed)" : "9") << setw(width) << (keypad[14] ? "E (pressed)" : "E") << endl;
-    os << setw(width) << (keypad[10] ? "A (pressed)" : "A") << setw(width) << (keypad[0] ? "0 (pressed)" : "0") << setw(width) << (keypad[11] ? "B (pressed)" : "B") << setw(width) << (keypad[15] ? "F (pressed)" : "F") << endl;
+    os << setw(width) << (keypad[10] ? "A (pressed)" : "A") << setw(width) << (keypad[0] ? "0 (pressed)" : "0") << setw(width) << (keypad[11] ? "B (pressed)" : "B") << setw(width) << (keypad[15] ? "F (pressed)" : "F") << '\n' << endl;
+}
+
+unsigned short Keyboard::waitForKeyPress(SDL_Scancode key1, SDL_Scancode key2, SDL_Scancode key3) {
+    while(chip8_->isRunning()){
+        // Get current pressed keys
+        pollKeyPad();
+        // If key is the pressed key break out of the loop or if the
+        for(auto key : {key1, key2, key3}){
+            if(keys[key])
+                return key;
+        }
+
+    }
 }

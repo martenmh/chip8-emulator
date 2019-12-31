@@ -16,7 +16,6 @@ Display::Display(Chip8 *parent, std::string title, int x, int y, int w, int h, u
 
     clearScreen();
     render();
-
 }
 
 Display::Display() : display_height{0}, display_width{0} {
@@ -62,11 +61,14 @@ int Display::flipPixel2(unsigned short x, unsigned short y, unsigned short heigh
             if((pixel & (0x80 >> xline)) != 0)
             {
                 if(gfx[(x + xline + ((y + yline) * 64))] == 1)
-                    bool flippedToUnset = true;
+                {
+                    flippedToUnset = true;
+                }
                 gfx[x + xline + ((y + yline) * 64)] ^= 1;
             }
         }
     }
+
 
     // After flipping pixels render the result
     render2();
@@ -133,18 +135,28 @@ int Display::display(unsigned short x, unsigned short y, unsigned short n) {
         std::cerr << "Please give a height between 1 and 15" << std::endl;
 
     bool flippedToUnset = false;
-
-    for(int height = 0; height <= n; height++){
+    std::cout << '\n';
+    for(int height = 0; height < n; height++){
         // Get the 8 bits from memory
-        auto spriteRow = chip8_->memory[chip8_->cpu.I + y];
+        unsigned char spriteRow = chip8_->memory[chip8_->cpu.I + height];
+
+        std::cout << (int)spriteRow << std::endl;
         for(int width = 8; width > 0; width--){
             // Get a single bit from the row
-            bool spritePixel = (spriteRow >> width) & 1;
-            if(pixel.at(x + width,y + height) == PixelSet && spritePixel == PixelSet)
+            char spritePixel = (spriteRow >> (width > 0 ? width - 1 : 0)) & 1;
+            std::cout << (spritePixel != 0 ? '*' : ' ');
+            int newX = x + (8 - width), newY = y + height;
+
+            auto &pixels = pixel.at(newX, newY);
+
+            if(pixels == PixelSet && spritePixel == PixelSet)
                 flippedToUnset = true;
-            pixel.at(x + width,y + height) ^= spritePixel;
+            pixels ^= spritePixel;
         }
+        std::cout << '\n';
     }
+
+    std::cout << std::endl;
     render();
     return flippedToUnset;
 }

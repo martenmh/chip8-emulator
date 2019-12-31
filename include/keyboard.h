@@ -8,8 +8,9 @@
 #include <SDL2/SDL.h>
 #include <ostream>
 #include <iostream>
+#include <array>
 
-enum key {
+enum Key {
     // Chip8 keypad buttons
     A   = 4,
     B   = 5,
@@ -31,6 +32,12 @@ enum key {
     ESCAPE  = 41,
     BACKSPACE = 42,
     LCTRL = 224,
+
+    // Debugging
+    RETURN = 40,    // Next
+    RIGHT = 79,     // Next
+    LEFT = 80       // Prev
+
 };
 
 class Chip8;
@@ -56,7 +63,9 @@ public:
        @return The key that has been pressed
      */
     unsigned char waitForKeyPress();
-    void waitForKeyPress(unsigned short key);
+
+    unsigned short waitForKeyPress(SDL_Scancode key1, SDL_Scancode key2, SDL_Scancode key3);
+
     /**
        Check all pressed keys (used in each clock cycle)
      */
