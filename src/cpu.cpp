@@ -29,8 +29,8 @@ CPU::CPU(Chip8 *chip8){
     sound_timer = 0;
 }
 
-//#define DEFAULT_UNKNOWN_OP default: chip8_->quit(UNKNOWN_OPCODE, "Unknown opcode: 0x" + Chip8::hexToReadableOpcode(opcode)); break;
-#define DEFAULT_UNKNOWN_OP default: sp += 2; break;
+#define DEFAULT_UNKNOWN_OP default: chip8_->quit(UNKNOWN_OPCODE, "Unknown opcode: 0x" + Chip8::hexToReadableOpcode(opcode)); break;
+//#define DEFAULT_UNKNOWN_OP default: sp += 2; break;
 void CPU::emulateCycle() {
     /* Store a byte from memory into the 2 byte opcode variable.
        Shift it so it is stored in the high byte.
@@ -51,18 +51,18 @@ void CPU::emulateCycle() {
                     chip8_->display->clearScreen();
                     pc += 2;
                     break;
-                case 0x00EE:   // 00EE Return from subroutine
-                    // Set program counter to return address in stac
+                case 0x00EE:    // 00EE Return from subroutine
+                    // Set program counter to return address at the top of the stack
                     sp--;
                     pc = chip8_->stack[sp];
                     pc += 2;
                     break;
-                default:        // 0xxx CALL RCA_1802 at $xxx
+                default:        // 0xxx syscall RCA_1802 at $xxx
                     // If xxx = 0, it's likely empty memory so just quit the emulator
-//                    if((opcode & 0x0FFF) == 0) {
-//                        //chip8_->quit(1, "Unknown opcode: 0x" + Chip8::hexToReadableOpcode(opcode));
-//                        break;
-//                    }
+                    if((opcode & 0x0FFF) == 0) {
+                        chip8_->quit(1, "Unknown opcode: 0x" + Chip8::hexToReadableOpcode(opcode));
+                        break;
+                    }
                     // If is not 0 Ignore as we're not using 0x0xxx
                     pc += 2;
                 break;
@@ -79,30 +79,25 @@ void CPU::emulateCycle() {
             ++sp;
             pc = opcode & 0x0FFF;   // Set opcode to address
             break;
-        case 0xB000:   // Bxxx Jump to address #(xxx + V0)
-            pc = (opcode & 0x0FFF) + V0;
-            break;
 
             /* Comparisons */
         case 0x3000:   // 3xnn Skip if Equal (Comparing immediate value to a register, if(Vx == nn))
             if(V[(opcode & 0x0F00) >> 8] == (opcode & 0x00FF))
+                pc += 4;
+            else
                 pc += 2;
-            pc += 2;
             break;
-        case 0x4000:   // Skip if Not Equal (Comparing immediate value to a register, if(Vx == nn))
+        case 0x4000:   // Skip if Not Equal (Comparing immediate value to a register, if(Vx != nn))
             if(V[(opcode & 0x0F00) >> 8] != (opcode & 0x00FF))
+                pc += 4;
+            else
                 pc += 2;
-            pc += 2;
             break;
         case 0x5000:   // Skip if Equal (Comparing registers, if(Vx == Vy))
             if(V[(opcode & 0x0F00) >> 8] == V[(opcode & 0x00F0) >> 4])
+                pc += 4;
+            else
                 pc += 2;
-            pc += 2;
-            break;
-        case 0x9000:   // Skip if Not Equal (Comparing registers, if(Vx == Vy))
-            if(V[(opcode & 0x0F00) >> 8] != V[(opcode & 0x00F0) >> 4])
-                pc += 2;
-            pc += 2;
             break;
 
         /* Immediate values and Register operations */
@@ -132,18 +127,18 @@ void CPU::emulateCycle() {
                     pc += 2;
                 break;
                 case 0x0003:   // 8xy3 XOR x ^= y
-                    V[(opcode & 0x0F00) >> 8] |= V[(opcode & 0x00F0) >> 4];
+                    V[(opcode & 0x0F00) >> 8] ^= V[(opcode & 0x00F0) >> 4];
                     pc += 2;
                 break;
                 case 0x0004:   // 8xy4 Add x += y
                     // Check how much the char can still hold by (255 - VX), if the remaining number to be added is larger than the value it can hold there is a carry
                     // Vy > (255 - Vx) == carry
+                    V[(opcode & 0x0F00) >> 8] += V[(opcode & 0x00F0) >> 4];
                     if(V[(opcode & 0x00F0) >> 4] > (0xFF - V[(opcode & 0x0F00) >> 8]))
                         VF = 1; // Carry
                     else
                         VF = 0;
 
-                    V[(opcode & 0x0F00) >> 8] += V[(opcode & 0x00F0) >> 4];
                     pc += 2;
                 break;
                 case 0x0005:   // 8xy5 Subtract x -= y
@@ -158,22 +153,22 @@ void CPU::emulateCycle() {
                     pc += 2;
                     break;
                 case 0x0006:   // 8xy6 Shift right x >>= 1  (stores least significant bit in VF)
-                    VF = (opcode & 0x0F00) & 1;
+                    VF = ((opcode & 0x0F00) >> 8) & 0x1;
                     V[(opcode & 0x0F00) >> 8] >>= 1;
                     pc += 2;
                     break;
                 case 0x0007:   // 8xy7 Subtract backwards x = y - x
                     // If y is larger than x set borrow flag
-                    if(V[(opcode & 0x00F0) >> 4] > (V[(opcode & 0x0F00) >> 8]))
-                        VF = 1; // Borrow
+                    if((V[(opcode & 0x0F00) >> 8]) > V[(opcode & 0x00F0) >> 4])
+                        VF = 0; // Borrow
                     else
-                        VF = 0;
+                        VF = 1;
 
                     V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x00F0) >> 4] - V[(opcode & 0x0F00) >> 8];
                     pc += 2;
                     break;
                 case 0x000E:   // 8xyE Shift left x <<= y   (stores most significant bit in VF)
-                    VF = ((opcode & 0x0F00) >> 8) & 1;
+                    VF = ((opcode & 0x0F00) >> 8) >> 7;
                     V[(opcode & 0x0F00) >> 8] <<= 1;
                     pc += 2;
                     break;
@@ -181,22 +176,32 @@ void CPU::emulateCycle() {
             }
             break;
 
+        /* Comparison */
+        case 0x9000:   // Skip if Not Equal (Comparing registers, if(Vx != Vy))
+            if(V[(opcode & 0x0F00) >> 8] != V[(opcode & 0x00F0) >> 4])
+                pc += 4;
+            else
+                pc += 2;
+        break;
+
+
             /* Other */
         case 0xA000:    // Axxx Set i to $xxx
             I = opcode & 0x0FFF;
             pc += 2;
             break;
+        case 0xB000:   // Bxxx Jump to address #(xxx + V0)
+            pc = (opcode & 0x0FFF) + V0;
+            break;
         case 0xC000:    // Cxnn Set Vx to a random number & nn (Vx = rand(0,255) & nn)
-            V[(opcode & 0x0F00) >> 8] = (std::rand() % 255) & (opcode & 0x00FF);
+            V[(opcode & 0x0F00) >> 8] = (std::rand() % (0xFF + 1)) & (opcode & 0x00FF);
             pc += 2;
             break;
 
         /* Display */
         case 0xD000:   // Dxyn Display value n in (x,y)
-            // TODO
             // Set flags register (1 if any pixel that was set has been unset)
             VF = chip8_->display->display(V[(opcode & 0x0F00) >> 8], V[(opcode & 0x00F0) >> 4], opcode & 0x000F);
-
             pc += 2;
             break;
 
@@ -205,14 +210,16 @@ void CPU::emulateCycle() {
             switch(opcode & 0x000F){
                 DEFAULT_UNKNOWN_OP
                 case 0x000E:   // Ex9E Skip next instruction if the key in Vx is pressed
-                    if(chip8_->keyboard.keyIsPressed((opcode & 0x0F00) >> 8))
-                        pc += 2;    // pc += 4 in total
-                    pc += 2;
+                    if(chip8_->keyboard.keyIsPressed((opcode & 0x0F00) >> 8) != 0)
+                        pc += 4;    // pc += 4 in total
+                    else
+                        pc += 2;
                 break;
                 case 0x0001:   // ExA1 Skip next instruction if the key in Vx is not pressed
-                    if(!chip8_->keyboard.keyIsPressed((opcode & 0x0F00) >> 8))
-                        pc += 2;    // pc += 4 in total
-                    pc += 2;
+                    if(chip8_->keyboard.keyIsPressed((opcode & 0x0F00) >> 8) == 1)
+                        pc += 4;    // pc += 4 in total
+                    else
+                        pc += 2;
                 break;
             }
             break;
@@ -237,7 +244,11 @@ void CPU::emulateCycle() {
                     sound_timer = V[(opcode & 0x0F00) >> 8];
                     pc += 2;
                     break;
-                case 0x001e:   // Fx1e Add register value Vx to I (Address register)
+                case 0x001E:   // Fx1e Add register value Vx to I (Address register)
+                if(I + V[(opcode & 0x0F00) >> 8] > 0xFFF)
+                    VF = 1;
+                else
+                    VF = 0;
                     I += V[(opcode & 0x0F00) >> 8];
                     pc += 2;
                 break;
@@ -257,11 +268,13 @@ void CPU::emulateCycle() {
                 case 0x0055:   // Fx55 Store V0-Vx in memory starting at I
                     for(int i = 0; i <= (opcode & 0x0F00) >> 8; i++)
                         chip8_->memory[I + i] = V[i];
+                    I += ((opcode & 0x0F00) >> 8) + 1;
                     pc += 2;
                     break;
-                case 0x0065:   // Fx65 Fill V0-Vx in memory starting at I
+                case 0x0065:   // Fx65 Fill V0-Vx from memory starting at I
                     for(int i = 0; i <= (opcode & 0x0F00) >> 8; i++)
                         V[i] = chip8_->memory[I + i];
+                    I += ((opcode & 0x0F00) >> 8) + 1;
                     pc += 2;
                     break;
             }

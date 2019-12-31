@@ -33,6 +33,7 @@ Display::~Display(){
 
 void Display::clearScreen() {
     pixel.setAll(PixelUnset);
+    render();
 }
 
 int Display::flipPixel(unsigned short x, unsigned short y, unsigned short height){
@@ -135,16 +136,13 @@ int Display::display(unsigned short x, unsigned short y, unsigned short n) {
         std::cerr << "Please give a height between 1 and 15" << std::endl;
 
     bool flippedToUnset = false;
-    std::cout << '\n';
     for(int height = 0; height < n; height++){
         // Get the 8 bits from memory
         unsigned char spriteRow = chip8_->memory[chip8_->cpu.I + height];
 
-        std::cout << (int)spriteRow << std::endl;
         for(int width = 8; width > 0; width--){
             // Get a single bit from the row
             char spritePixel = (spriteRow >> (width > 0 ? width - 1 : 0)) & 1;
-            std::cout << (spritePixel != 0 ? '*' : ' ');
             int newX = x + (8 - width), newY = y + height;
 
             auto &pixels = pixel.at(newX, newY);
@@ -153,10 +151,8 @@ int Display::display(unsigned short x, unsigned short y, unsigned short n) {
                 flippedToUnset = true;
             pixels ^= spritePixel;
         }
-        std::cout << '\n';
     }
 
-    std::cout << std::endl;
     render();
     return flippedToUnset;
 }

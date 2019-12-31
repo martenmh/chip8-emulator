@@ -33,6 +33,7 @@ public:
      */
     void getMemory(unsigned short from, unsigned short to, std::ostream &os = std::cout);
     void loadProgram(std::string pathName);
+    bool loadProgram2(const char *file_path);
     inline bool isRunning(){ return enabled; }
     void loadFontset();
     // The various Chip8 parts

@@ -79,7 +79,7 @@ int main(int argc, char *argv[]){
         if(debug) {
             chip8.cpu.getCPUInfo(std::cout);
             chip8.keyboard.getKeyboardInfo(std::cout, 15);
-            SDL_Delay(150);
+            SDL_Delay(15);
         }
     }
 

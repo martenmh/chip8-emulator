@@ -32,27 +32,76 @@ Chip8::~Chip8(){
     SDL_Quit();
 }
 
-void Chip8::loadProgram(std::string pathName) {
-    std::ifstream file(pathName);
-    if(file.bad())
-        std::cerr << "Failed loading game into memory" << std::endl;
+bool Chip8::loadProgram2(const char * file_path) {
 
-    int i = 0;
-    // Load game up to 0xEFF or EOF
-    while(!file.eof() && i < 0xEFF - 0x001 ) {
+    printf("Loading ROM: %s\n", file_path);
 
-        char c = file.get();
-        // Skip spaces & enters
-        if(c == ' ' || c == '\n')
-            continue;
-
-        // Write to memory address
-        memory[i + 0x200] = c; // Start at 0x200
-        // Increment after usage
-        i++;
+    // Open ROM file
+    FILE *rom = fopen(file_path, "rb");
+    if (rom == NULL) {
+        std::cerr << "Failed to open ROM" << std::endl;
+        return false;
     }
-    memory[i + 1] = '\0';
+
+    // Get file size
+    fseek(rom, 0, SEEK_END);
+    long rom_size = ftell(rom);
+    rewind(rom);
+
+    // Allocate memory to store rom
+    char *rom_buffer = (char *) malloc(sizeof(char) * rom_size);
+    if (rom_buffer == NULL) {
+        std::cerr << "Failed to allocate memory for ROM" << std::endl;
+        return false;
+    }
+
+    // Copy ROM into buffer
+    size_t result = fread(rom_buffer, sizeof(char), (size_t) rom_size, rom);
+    if (result != rom_size) {
+        std::cerr << "Failed to read ROM" << std::endl;
+        return false;
+    }
+
+    // Copy buffer to memory
+    if ((4096 - 512) > rom_size) {
+        for (int i = 0; i < rom_size; ++i) {
+            memory[i + 512] = (uint8_t) rom_buffer[i];   // Load into memory starting
+            // at 0x200 (=512)
+        }
+    } else {
+        std::cerr << "ROM too large to fit in memory" << std::endl;
+        return false;
+    }
+
+    // Clean up
+    fclose(rom);
+    free(rom_buffer);
+
+    return true;
+
 }
+#include <memory>
+void Chip8::loadProgram(std::string pathName) {
+    std::ifstream file;
+    file.open(pathName, std::ifstream::binary);
+
+    // get pointer to associated buffer object
+    std::filebuf* pbuf = file.rdbuf();
+
+    // get file size using buffer's members
+    std::size_t size = pbuf->pubseekoff (0,file.end,file.in);
+    pbuf->pubseekpos (0,file.in);
+
+    // allocate memory to contain file data
+    std::unique_ptr<char> buffer(new char[size]);
+
+    // get file data
+    pbuf->sgetn (buffer.get(),size);
+
+    for(int i = 0; i < size; ++i)
+        memory[i + 512] = buffer.get()[i];
+
+}   // file.close(), delete char[size]
 
 unsigned short Chip8::getAddressOfChar(unsigned char c){
     switch(c) {
