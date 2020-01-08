@@ -53,26 +53,21 @@ public:
        Draw sprite at coordinate (x, y) with height of N pixels
        @return 1 if any screen pixels are flipped from set to unset, and to 0 if that doesn't happen
      */
-    //int flipPixel(int x, int y, int height);
     int display(unsigned short x, unsigned short y, unsigned short height);
-    int flipPixel(unsigned short x, unsigned short y, unsigned short height);
-    int flipPixel2(unsigned short x, unsigned short y, unsigned short height);
 
     /**
        Go through all pixels and render them with the appropriate color
      */
-    //void render();
+    void render();
     ~Display();
     void clearScreen();
-    void render();
-    void render2();
+
     // Graphics
     Pixel pixel;
     SDL_Window *window;
     SDL_Renderer *renderer;
 
 private:
-    unsigned char gfx[64 * 32]; // Display resolution of 64 x 32 pixels;
     Chip8 *chip8_;
     int display_width;
     int display_height;

@@ -21,6 +21,7 @@ Chip8::Chip8(): enabled{true}, paused{false}, reverse{false}{
 
     keyboard = Keyboard(this);
     loadFontset();
+    drawFlag = false;
 }
 
 Chip8::~Chip8(){
@@ -103,6 +104,7 @@ void Chip8::loadProgram(std::string pathName) {
 
 }   // file.close(), delete char[size]
 
+
 unsigned short Chip8::getAddressOfChar(unsigned char c){
     switch(c) {
         case 0: return 0x50 + 0;
@@ -140,10 +142,6 @@ std::string Chip8::hexToReadableOpcode(unsigned short opcode) {
     // Convert Hex 0-F to character 0-F
     auto checkNibble = [](char f){return f > 9 ? (char)(f + 55) : (char)(f + 48); };
     return std::string({checkNibble(firstNibble), checkNibble(secondNibble), checkNibble(thirdNibble), checkNibble(fourthNibble)});
-}
-
-void Chip8::undo() {
-
 }
 
 void Chip8::getMemory(unsigned short from, unsigned short to, std::ostream &os) {

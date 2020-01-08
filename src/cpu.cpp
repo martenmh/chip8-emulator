@@ -36,6 +36,7 @@ void CPU::emulateCycle() {
        Shift it so it is stored in the high byte.
        Store another byte from memory in to the lower byte */
     opcode =  chip8_->memory[pc] << 8 |  chip8_->memory[pc + 1];
+
     /*  $0x.... = Value of register
         #0x.... = Value at address
         0x.... = immediate value
@@ -49,6 +50,7 @@ void CPU::emulateCycle() {
             switch(opcode & 0x00FF){
                 case 0x00E0:   // 00E0 Clear screen
                     chip8_->display->clearScreen();
+                    chip8_->drawFlag = true;
                     pc += 2;
                     break;
                 case 0x00EE:    // 00EE Return from subroutine
@@ -144,16 +146,16 @@ void CPU::emulateCycle() {
                 case 0x0005:   // 8xy5 Subtract x -= y
                     // If y is larger than x set borrow flag
                     if(V[(opcode & 0x00F0) >> 4] > (V[(opcode & 0x0F00) >> 8]))
-                        VF = 1; // Borrow
+                        VF = 0; // Borrow
                     else
-                        VF = 0;
+                        VF = 1;
 
                     V[(opcode & 0x0F00) >> 8] -= V[(opcode & 0x00F0) >> 4];
 
                     pc += 2;
                     break;
                 case 0x0006:   // 8xy6 Shift right x >>= 1  (stores least significant bit in VF)
-                    VF = ((opcode & 0x0F00) >> 8) & 0x1;
+                    VF = V[(opcode & 0x0F00) >> 8] & 0x1;
                     V[(opcode & 0x0F00) >> 8] >>= 1;
                     pc += 2;
                     break;
@@ -168,7 +170,7 @@ void CPU::emulateCycle() {
                     pc += 2;
                     break;
                 case 0x000E:   // 8xyE Shift left x <<= y   (stores most significant bit in VF)
-                    VF = ((opcode & 0x0F00) >> 8) >> 7;
+                    VF = V[(opcode & 0x0F00) >> 8] >> 7;
                     V[(opcode & 0x0F00) >> 8] <<= 1;
                     pc += 2;
                     break;
@@ -183,7 +185,6 @@ void CPU::emulateCycle() {
             else
                 pc += 2;
         break;
-
 
             /* Other */
         case 0xA000:    // Axxx Set i to $xxx
@@ -202,6 +203,8 @@ void CPU::emulateCycle() {
         case 0xD000:   // Dxyn Display value n in (x,y)
             // Set flags register (1 if any pixel that was set has been unset)
             VF = chip8_->display->display(V[(opcode & 0x0F00) >> 8], V[(opcode & 0x00F0) >> 4], opcode & 0x000F);
+            VF = 1;
+            chip8_->drawFlag = true;
             pc += 2;
             break;
 
@@ -210,13 +213,13 @@ void CPU::emulateCycle() {
             switch(opcode & 0x000F){
                 DEFAULT_UNKNOWN_OP
                 case 0x000E:   // Ex9E Skip next instruction if the key in Vx is pressed
-                    if(chip8_->keyboard.keyIsPressed((opcode & 0x0F00) >> 8) != 0)
+                    if(chip8_->keyboard.keyIsPressed(V[(opcode & 0x0F00) >> 8] != 0))
                         pc += 4;    // pc += 4 in total
                     else
                         pc += 2;
                 break;
                 case 0x0001:   // ExA1 Skip next instruction if the key in Vx is not pressed
-                    if(chip8_->keyboard.keyIsPressed((opcode & 0x0F00) >> 8) == 1)
+                    if(chip8_->keyboard.keyIsPressed(V[(opcode & 0x0F00) >> 8] == 1))
                         pc += 4;    // pc += 4 in total
                     else
                         pc += 2;
@@ -257,24 +260,20 @@ void CPU::emulateCycle() {
                     pc += 2;
                 break;
                 case 0x0033:   // Fx33 Store the Binary-Coded decimal representation of register Vx in I, I+1 and I+2
-                    {
-                        auto bcdDigits = binaryCodedDecimal(opcode & 0x0F00);
-                        chip8_->memory[I] = (short)bcdDigits[0];
-                        chip8_->memory[I + 1] = (short)bcdDigits[1];
-                        chip8_->memory[I + 2] = (short)bcdDigits[2];
-                    }
+                    chip8_->memory[I]     = V[(opcode & 0x0F00) >> 8] / 100;
+                    chip8_->memory[I + 1] = (V[(opcode & 0x0F00) >> 8] / 10) % 10;
+                    chip8_->memory[I + 2] = V[(opcode & 0x0F00) >> 8] % 10;
+
                     pc += 2;
                 break;
                 case 0x0055:   // Fx55 Store V0-Vx in memory starting at I
                     for(int i = 0; i <= (opcode & 0x0F00) >> 8; i++)
                         chip8_->memory[I + i] = V[i];
-                    I += ((opcode & 0x0F00) >> 8) + 1;
                     pc += 2;
                     break;
                 case 0x0065:   // Fx65 Fill V0-Vx from memory starting at I
                     for(int i = 0; i <= (opcode & 0x0F00) >> 8; i++)
                         V[i] = chip8_->memory[I + i];
-                    I += ((opcode & 0x0F00) >> 8) + 1;
                     pc += 2;
                     break;
             }

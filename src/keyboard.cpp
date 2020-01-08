@@ -21,7 +21,6 @@ void Keyboard::pollKeyPad() {
     // Check keys 0-F
     for(int keyCheck : {N0,N1,N2,N3,N4,N5,N6,N7,N8,N9, A,B,C,D,E,F})
         keypad[i++] = keys[keyCheck];   // Set pressed buttons of keypad
-
 }
 
 Keyboard::Keyboard() {

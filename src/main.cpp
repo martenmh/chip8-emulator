@@ -71,6 +71,8 @@ int main(int argc, char *argv[]){
 
         chip8.keyboard.pollKeyPad();
         chip8.cpu.emulateCycle();
+        if(chip8.drawFlag)
+            chip8.display->render();
 
         // Write current assembly
         if(debug || verbose) {

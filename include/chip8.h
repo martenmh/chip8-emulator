@@ -80,9 +80,7 @@ public:
             0xF0, 0x80, 0xF0, 0x80, 0x80  // F
     };
 
-    void undo();
-
-    std::stack<unsigned short> PCStack;
+    bool drawFlag;
 private:
     bool reverse;
 
